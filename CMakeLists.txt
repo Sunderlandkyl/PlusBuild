@@ -128,6 +128,7 @@ OPTION(PLUSBUILD_USE_Tesseract "Use OCR in PlusLib for recognizing ultrasound im
 OPTION(PLUSBUILD_USE_OpenCV "Use OpenCV for optical marker tracking and other features." OFF)
 OPTION(PLUSBUILD_USE_aruco "Use aruco for optical marker tracking." OFF)
 OPTION(PLUSBUILD_DOWNLOAD_PLUSLIBDATA "Download sample and test data. Required for automatic tests." ON)
+OPTION(PLUSBUILD_USE_libwebm "Use libwebm for writing .mkv files." OFF)
 
 # Documentation
 OPTION(PLUSBUILD_DOCUMENTATION "Build Plus documentation (Doxygen)." OFF)
@@ -455,6 +456,10 @@ ENDIF()
 
 IF(PLUS_USE_BKPROFOCUS_CAMERALINK)
   INCLUDE(SuperBuild/External_GrabbieLib.cmake)
+ENDIF()
+
+IF (PLUSBUILD_USE_libwebm)
+  INCLUDE(SuperBuild/External_libwebm.cmake)
 ENDIF()
 
 #-- OvrvisionPro/OPTICAL_TRACKER dependency verification ----------------------------------------------
