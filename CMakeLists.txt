@@ -343,6 +343,8 @@ IF(UNIX AND NOT APPLE)
   ENDIF()
 ENDIF()
 
+OPTION(PLUS_USE_TOBII_INTERACTION "Enable head/gaze tracking with Tobii Interaction SDK" OFF)
+
 OPTION(PLUS_ENABLE_VIDEOSTREAMING "Provide support for streaming compressed video from Plus" OFF)
 OPTION(PLUS_USE_VP9 "Compile OpenIGTLink with VP9 support for compressed video streaming" OFF)
 IF (PLUS_USE_VP9)
@@ -815,6 +817,13 @@ IF(PLUS_USE_REVOPOINT3DCAMERA)
   FIND_PACKAGE(REVOPOINT3DSDK)
   IF(NOT REVOPOINT3DSDK_FOUND)
     MESSAGE(FATAL_ERROR "This project requires RevoPoint 3D SDK for supporting the Revopoint 3D cameras. One of the components is missing. Please verify configuration or turn off PLUS_USE_REVOPOINT3DCAMERA.")
+  ENDIF()
+ENDIF()
+
+IF(PLUS_USE_TOBII_INTERACTION)
+  FIND_PACKAGE(TobiiInteractionSDK)
+  IF(NOT TobiiInteractionSDK_FOUND)
+    MESSAGE(FATAL_ERROR "This project requires Tobii Interaction SDK for supporting Tobii cameras. One of the components is missing. Please verify configuration or turn off PLUS_USE_TOBII_INTERACTION.")
   ENDIF()
 ENDIF()
 
