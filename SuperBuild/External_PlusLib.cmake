@@ -7,40 +7,39 @@
 # and reading it in PlusLib, rather than also editing a third list here that
 # has to be kept in step with the other two.
 
-set(_pluslib_sdk_args)
-
-macro(_plus_pluslib_args)
-  list(APPEND _pluslib_sdk_args ${ARGN})
-endmacro()
+# plus_add_pluslib_args() rather than a macro appending to a local list: a
+# macro substitutes its arguments textually, so its body is parsed a second
+# time, and on that second pass the backslashes in a Windows path are read as
+# escape sequences and rejected.
 
 if(PLUSBUILD_USE_3DSlicer)
-  _plus_pluslib_args(-DSLICER_BIN_DIRECTORY:PATH=${PLUSBUILD_SLICER_BIN_DIRECTORY})
+  plus_add_pluslib_args(-DSLICER_BIN_DIRECTORY:PATH=${PLUSBUILD_SLICER_BIN_DIRECTORY})
 endif()
 
 if(PLUSBUILD_USE_OpenIGTLink)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DOpenIGTLink_DIR:PATH=${PLUS_OpenIGTLink_DIR}
     -DOpenIGTLinkIO_DIR:PATH=${PLUS_OpenIGTLinkIO_DIR}
     )
 endif()
 
 if(PLUS_USE_TextRecognizer)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -Dtesseract_DIR:PATH=${PLUS_tesseract_DIR}
     -Dtesseract_DATA_DIR:PATH=${PLUS_tessdata_src_DIR}
     )
 endif()
 
 if(PLUSBUILD_USE_OpenCV)
-  _plus_pluslib_args(-DOpenCV_DIR:PATH=${PLUS_OpenCV_DIR})
+  plus_add_pluslib_args(-DOpenCV_DIR:PATH=${PLUS_OpenCV_DIR})
 endif()
 
 if(PLUSBUILD_USE_aruco)
-  _plus_pluslib_args(-Daruco_DIR:PATH=${PLUS_aruco_DIR})
+  plus_add_pluslib_args(-Daruco_DIR:PATH=${PLUS_aruco_DIR})
 endif()
 
 if(PLUS_USE_ATRACSYS)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DAtracsysSDK_INCLUDE_DIR:PATH=${AtracsysSDK_INCLUDE_DIR}
     -DAtracsysSDK_LIBRARY:PATH=${AtracsysSDK_LIBRARY}
     -DAtracsysSDK_BINARY_DIR:PATH=${AtracsysSDK_BINARY_DIR}
@@ -49,7 +48,7 @@ if(PLUS_USE_ATRACSYS)
 endif()
 
 if(PLUS_USE_PICOSCOPE)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DPicoScopeSDK_INCLUDE_DIR:PATH=${PicoScopeSDK_INCLUDE_DIR}
     -DPicoScopeSDK_LIBRARY_DIR:PATH=${PicoScopeSDK_LIBRARY_DIR}
     -DPicoScopeSDK_BINARY_DIR:PATH=${PicoScopeSDK_BINARY_DIR}
@@ -57,7 +56,7 @@ if(PLUS_USE_PICOSCOPE)
 endif()
 
 if(PLUS_USE_SPINNAKER_VIDEO)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DSPINNAKER_API_INCLUDE_DIR:PATH=${SPINNAKER_API_INCLUDE_DIR}
     -DSPINNAKER_API_LIBRARY_DIR:PATH=${SPINNAKER_API_LIBRARY_DIR}
     -DSPINNAKER_API_BINARY_DIR:PATH=${SPINNAKER_API_BINARY_DIR}
@@ -65,18 +64,18 @@ if(PLUS_USE_SPINNAKER_VIDEO)
 endif()
 
 if(PLUS_USE_ULTRASONIX_VIDEO)
-  _plus_pluslib_args(-DULTRASONIX_SDK_DIR:PATH=${ULTRASONIX_SDK_DIR})
+  plus_add_pluslib_args(-DULTRASONIX_SDK_DIR:PATH=${ULTRASONIX_SDK_DIR})
 endif()
 
 if(PLUS_USE_BKPROFOCUS_VIDEO)
-  _plus_pluslib_args(-DGRABBIELIB_SOURCE_DIR:PATH=${PLUS_GRABBIELIB_SOURCE_DIR})
+  plus_add_pluslib_args(-DGRABBIELIB_SOURCE_DIR:PATH=${PLUS_GRABBIELIB_SOURCE_DIR})
   if(PLUS_USE_BKPROFOCUS_CAMERALINK)
-    _plus_pluslib_args(-DDALSASAPERA_LIB_DIR:PATH=${DALSASAPERA_LIB_DIR})
+    plus_add_pluslib_args(-DDALSASAPERA_LIB_DIR:PATH=${DALSASAPERA_LIB_DIR})
   endif()
 endif()
 
 if(PLUS_USE_OPTIMET_CONOPROBE)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DOPTIMETSMART32SDK_INCLUDE_DIR:PATH=${OPTIMETSMART32SDK_INCLUDE_DIR}
     -DOPTIMETSMART32SDK_64BIT_BINARY_DIR:PATH=${OPTIMETSMART32SDK_64BIT_BINARY_DIR}
     -DOPTIMETSMART32SDK_64BIT_LIBRARY:PATH=${OPTIMETSMART32SDK_64BIT_LIBRARY}
@@ -86,7 +85,7 @@ if(PLUS_USE_OPTIMET_CONOPROBE)
 endif()
 
 if(PLUS_USE_OPTITRACK)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DOPTITRACK_MOTIVE_INCLUDE_DIR:PATH=${MotiveAPI_INCLUDE_DIR}
     -DOPTITRACK_MOTIVE_DIR:PATH=${MotiveAPI_DIR}
     -DOPTITRACK_MOTIVE_VERSION:STRING=${MotiveAPI_VERSION}
@@ -98,14 +97,14 @@ if(PLUS_USE_OPTITRACK)
 endif()
 
 if(PLUS_USE_STEAMVR)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DOVR_DIR:PATH=${PLUS_OVR_DIR}
     -DOPENVR_ROOT_DIR:PATH=${PLUS_OVR_DIR}
     )
 endif()
 
 if(PLUS_USE_ICCAPTURING_VIDEO)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DICCAPTURING_INCLUDE_DIR:PATH=${ICCAPTURING_INCLUDE_DIR}
     -DICCAPTURING_TIS_UDSHL_STATIC_LIB:PATH=${ICCAPTURING_TIS_UDSHL_STATIC_LIB}
     -DICCAPTURING_TIS_UDSHL_SHARED_LIB:PATH=${ICCAPTURING_TIS_UDSHL_SHARED_LIB}
@@ -115,7 +114,7 @@ if(PLUS_USE_ICCAPTURING_VIDEO)
 endif()
 
 if(PLUS_USE_CAPISTRANO_VIDEO)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DCAPISTRANO_INCLUDE_DIR:PATH=${CAPISTRANO_INCLUDE_DIR}
     -DCAPISTRANO_LIBRARY_DIR:PATH=${CAPISTRANO_LIBRARY_DIR}
     -DCAPISTRANO_BINARY_DIR:PATH=${CAPISTRANO_BINARY_DIR}
@@ -131,7 +130,7 @@ if(PLUS_USE_CLARIUS)
   set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
   set(THREADS_PREFER_PTHREAD_FLAG TRUE)
   find_package(Threads REQUIRED)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DCLARIUS_INCLUDE_DIR:PATH=${CLARIUS_INCLUDE_DIR}
     -DCLARIUS_DIR:PATH=${CLARIUS_DIR}
     -DCLARIUS_LIB_DIR:PATH=${CLARIUS_LIB_DIR}
@@ -139,14 +138,14 @@ if(PLUS_USE_CLARIUS)
 endif()
 
 if(PLUS_USE_CLARIUS_OEM)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DQt5_DIR:PATH=${Qt5_DIR}
     -DClariusOEM_DIR:PATH=${Plus_ClariusOEM_DIR}
     )
 endif()
 
 if(PLUS_USE_ANDOR_CAMERA)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DANDOR_INCLUDE_DIR:PATH=${ANDOR_INCLUDE_DIR}
     -DANDOR_LIBRARY_DIR:PATH=${ANDOR_LIBRARY_DIR}
     -DANDOR_BINARY_DIR:PATH=${ANDOR_BINARY_DIR}
@@ -156,11 +155,11 @@ if(PLUS_USE_ANDOR_CAMERA)
 endif()
 
 if(PLUS_USE_WINPROBE_VIDEO)
-  _plus_pluslib_args(-DWINPROBESDK_DIR:PATH=${WINPROBESDK_DIR})
+  plus_add_pluslib_args(-DWINPROBESDK_DIR:PATH=${WINPROBESDK_DIR})
 endif()
 
 if(PLUS_USE_INTERSON_VIDEO)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DINTERSON_INCLUDE_DIR:PATH=${INTERSON_INCLUDE_DIR}
     -DINTERSON_LIBRARY_DIR:PATH=${INTERSON_LIBRARY_DIR}
     -DINTERSON_BINARY_DIR:PATH=${INTERSON_BINARY_DIR}
@@ -170,20 +169,20 @@ if(PLUS_USE_INTERSON_VIDEO)
 endif()
 
 if(PLUS_USE_INTERSONSDKCXX_VIDEO)
-  _plus_pluslib_args(-DIntersonSDKCxx_DIR:PATH=${PLUS_IntersonSDKCxx_DIR})
+  plus_add_pluslib_args(-DIntersonSDKCxx_DIR:PATH=${PLUS_IntersonSDKCxx_DIR})
 endif()
 
 if(PLUS_USE_INTERSONARRAYSDKCXX_VIDEO)
-  _plus_pluslib_args(-DIntersonArraySDKCxx_DIR:PATH=${PLUS_IntersonArraySDKCxx_DIR})
+  plus_add_pluslib_args(-DIntersonArraySDKCxx_DIR:PATH=${PLUS_IntersonArraySDKCxx_DIR})
 endif()
 
 if(PLUS_USE_STEALTHLINK)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DSTEALTHLINK_INCLUDE_DIRS:PATH=${STEALTHLINK_INCLUDE_DIRS}
     -DSTEALTHLINK_STEALTHLINK_STATIC_LIBRARY:PATH=${STEALTHLINK_STEALTHLINK_STATIC_LIBRARY}
     )
   if(WIN32)
-    _plus_pluslib_args(
+    plus_add_pluslib_args(
       -DSTEALTHLINK_STEALTHLINK_SHARED_LIBRARY:PATH=${STEALTHLINK_STEALTHLINK_SHARED_LIBRARY}
       -DSTEALTHLINK_STEALTHLINKD_STATIC_LIBRARY:PATH=${STEALTHLINK_STEALTHLINKD_STATIC_LIBRARY}
       -DSTEALTHLINK_STEALTHLINKD_SHARED_LIBRARY:PATH=${STEALTHLINK_STEALTHLINKD_SHARED_LIBRARY}
@@ -192,11 +191,11 @@ if(PLUS_USE_STEALTHLINK)
 endif()
 
 if(PLUS_USE_NDI)
-  _plus_pluslib_args(-Dndicapi_DIR:PATH=${PLUS_ndicapi_DIR})
+  plus_add_pluslib_args(-Dndicapi_DIR:PATH=${PLUS_ndicapi_DIR})
 endif()
 
 if(PLUS_USE_NDI_CERTUS)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DNDIOAPI_LIBRARY:PATH=${NDIOAPI_LIBRARY}
     -DNDIOAPI_BINARY_DIR:PATH=${NDIOAPI_BINARY_DIR}
     -DNDIOAPI_INCLUDE_DIR:PATH=${NDIOAPI_INCLUDE_DIR}
@@ -204,7 +203,7 @@ if(PLUS_USE_NDI_CERTUS)
 endif()
 
 if(PLUS_USE_MICRONTRACKER)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DMicronTracker_INCLUDE_DIR:PATH=${MicronTracker_INCLUDE_DIR}
     -DMicronTracker_LIBRARY:PATH=${MicronTracker_LIBRARY}
     -DMicronTracker_BINARY_DIR:PATH=${MicronTracker_BINARY_DIR}
@@ -212,7 +211,7 @@ if(PLUS_USE_MICRONTRACKER)
 endif()
 
 if(PLUS_USE_OPENHAPTICS)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DOpenHaptics_INCLUDE_DIR:PATH=${OpenHaptics_INCLUDE_DIRS}
     -DHLAPI_HLU_INCLUDE_DIR:PATH=${HLAPI_HLU_INCLUDE_DIR}
     -DHD_LIBRARY_RELEASE:PATH=${HDAPI_LIBRARY_RELEASE}
@@ -229,14 +228,14 @@ if(PLUS_USE_OPENHAPTICS)
 endif()
 
 if(PLUS_USE_BLACKMAGIC_DECKLINK)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DDeckLinkSDK_INCLUDE_DIR:PATH=${DeckLinkSDK_INCLUDE_DIR}
     -DDeckLinkSDK_PATH:PATH=${DeckLinkSDK_PATH}
     )
 endif()
 
 if(PLUS_USE_INFRARED_SEEK_CAM)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DLIBUSB_INCLUDE_DIR:PATH=${LIBUSB_INCLUDE_DIR}
     -DLIBUSB_LIBRARY:PATH=${LIBUSB_LIBRARY}
     -DSeekCameraLib_DIR:PATH=${PLUS_SeekCameraLib_DIR}
@@ -244,7 +243,7 @@ if(PLUS_USE_INFRARED_SEEK_CAM)
 endif()
 
 if(PLUS_USE_INFRARED_TEQ1_CAM)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DTEQ1_SDK_INCLUDE_DIR:PATH=${TEQ1_SDK_INCLUDE_DIR}
     -DTEQ1_SDK_LIBRARY:PATH=${TEQ1_SDK_LIBRARY}
     -DTEQ1_SDK_BINARY:PATH=${TEQ1_SDK_BINARY}
@@ -253,7 +252,7 @@ if(PLUS_USE_INFRARED_TEQ1_CAM)
 endif()
 
 if(PLUS_USE_INFRARED_TEEV2_CAM)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DTEEV2_SDK_INCLUDE_DIR:PATH=${TEEV2_SDK_INCLUDE_DIR}
     -DTEEV2_SDK_LIBRARY:PATH=${TEEV2_SDK_LIBRARY}
     -DTEEV2_SDK_BINARY:PATH=${TEEV2_SDK_BINARY}
@@ -262,7 +261,7 @@ if(PLUS_USE_INFRARED_TEEV2_CAM)
 endif()
 
 if(PLUS_USE_ULTRAVIOLET_PCOUV_CAM)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DPCOUV_SDK_INCLUDE_DIR:PATH=${PCOUV_SDK_INCLUDE_DIR}
     -DPCOUV_SDK_LIBRARY:PATH=${PCOUV_SDK_LIBRARY}
     -DPCOUV_SDK_BINARY:PATH=${PCOUV_SDK_BINARY}
@@ -271,7 +270,7 @@ if(PLUS_USE_ULTRAVIOLET_PCOUV_CAM)
 endif()
 
 if(PLUS_USE_DAQVIDEOSOURCE)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DDAQVIDEOSOURCE_SDK_INCLUDE_DIR:PATH=${DAQVIDEOSOURCE_SDK_INCLUDE_DIR}
     -DDAQVIDEOSOURCE_SDK_LIBRARY:PATH=${DAQVIDEOSOURCE_SDK_LIBRARY}
     -DDAQVIDEOSOURCE_SDK_BINARY:PATH=${DAQVIDEOSOURCE_SDK_BINARY}
@@ -280,7 +279,7 @@ if(PLUS_USE_DAQVIDEOSOURCE)
 endif()
 
 if(PLUS_USE_INTELREALSENSE)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DRSSDK_INCLUDE_DIR:PATH=${RSSDK_INCLUDE_DIR}
     -DRSSDK_LIB:PATH=${RSSDK_LIB}
     -DRSSDK_BIN:PATH=${RSSDK_BIN}
@@ -288,7 +287,7 @@ if(PLUS_USE_INTELREALSENSE)
 endif()
 
 if(PLUS_USE_NVIDIA_DVP)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DNVIDIA_DVP_INCLUDE_DIR:PATH=${NVIDIA_DVP_INCLUDE_DIR}
     -DNVIDIA_DVP_BINARY_DIR:PATH=${NVIDIA_DVP_BINARY_DIR}
     -DNVIDIA_DVP_LIB_DIR:PATH=${NVIDIA_DVP_LIB_DIR}
@@ -297,11 +296,11 @@ if(PLUS_USE_NVIDIA_DVP)
 endif()
 
 if(PLUS_USE_OvrvisionPro)
-  _plus_pluslib_args(-DOvrvisionPro_DIR:PATH=${PLUS_OvrvisionPro_DIR})
+  plus_add_pluslib_args(-DOvrvisionPro_DIR:PATH=${PLUS_OvrvisionPro_DIR})
 endif()
 
 if(PLUS_USE_IntuitiveDaVinci)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DIntuitiveDaVinci_INCLUDE_DIR:PATH=${IntuitiveDaVinci_INCLUDE_DIR}
     -DIntuitiveDaVinci_LIBRARY:PATH=${IntuitiveDaVinci_LIBRARY}
     )
@@ -332,7 +331,7 @@ if(PLUS_USE_MMF_VIDEO OR PLUS_USE_TELEMED_VIDEO)
     # Passed as a real list. It used to be joined with "|" and taken apart
     # again on the other side, because a command-line argument cannot carry a
     # semicolon. An initial cache file can.
-    _plus_pluslib_args("-DWINDOWS_SDK_INCLUDE_DIRS:STRING=${WINDOWS_SDK_INCLUDE_DIRS}")
+    plus_add_pluslib_args("-DWINDOWS_SDK_INCLUDE_DIRS:STRING=${WINDOWS_SDK_INCLUDE_DIRS}")
   else()
     message(WARNING "The Windows SDKs found at ${WINDOWS_SDK_ROOT_DIRS} are not compatible with Plus")
   endif()
@@ -346,18 +345,18 @@ if(PLUS_USE_TELEMED_VIDEO)
   if(NOT PLUS_WINDOWS_SDK_IS_COMPATIBLE)
     message(FATAL_ERROR "This project requires the Windows SDK to support the Telemed ultrasound probes. Either install a recent Windows SDK or turn off PLUS_USE_TELEMED_VIDEO.")
   endif()
-  _plus_pluslib_args(-DTELEMED_INCLUDE_DIR:PATH=${TELEMED_INCLUDE_DIR})
+  plus_add_pluslib_args(-DTELEMED_INCLUDE_DIR:PATH=${TELEMED_INCLUDE_DIR})
 endif()
 
 if(PLUS_USE_THORLABS_VIDEO)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DTHORLABS_INCLUDE_DIR:PATH=${THORLABS_INCLUDE_DIR}
     -DTHORLABS_LIBRARY_DIR:PATH=${THORLABS_LIBRARY_DIR}
     )
 endif()
 
 if(PLUS_USE_PHILIPS_3D_ULTRASOUND)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DPhilips_BINARY_DIRS:PATH=${Philips_BINARY_DIRS}
     -DPhilips_INCLUDE_DIRS:PATH=${Philips_INCLUDE_DIRS}
     -DPhilips_LIBRARY_DIR:PATH=${Philips_LIBRARY_DIR}
@@ -365,15 +364,15 @@ if(PLUS_USE_PHILIPS_3D_ULTRASOUND)
 endif()
 
 if(PLUS_USE_MKV_IO)
-  _plus_pluslib_args(-Dlibwebm_DIR:PATH=${PLUS_libwebm_DIR})
+  plus_add_pluslib_args(-Dlibwebm_DIR:PATH=${PLUS_libwebm_DIR})
 endif()
 
 if(PLUS_USE_LEAPMOTION)
-  _plus_pluslib_args(-DLeapSDK_DIR:PATH=${LeapSDK_DIR})
+  plus_add_pluslib_args(-DLeapSDK_DIR:PATH=${LeapSDK_DIR})
 endif()
 
 if(PLUS_USE_AZUREKINECT)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DK4A_INCLUDE_DIR:PATH=${K4A_INCLUDE_DIR}
     -DK4A_LIBRARY_DIR:PATH=${K4A_LIBRARY_DIR}
     -DK4A_BINARY_DIR:PATH=${K4A_BINARY_DIR}
@@ -382,7 +381,7 @@ if(PLUS_USE_AZUREKINECT)
 endif()
 
 if(PLUS_USE_REVOPOINT3DCAMERA)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DREVOPOINT3DSDK_INCLUDE_DIR:PATH=${REVOPOINT3DSDK_INCLUDE_DIR}
     -DREVOPOINT3DSDK_BINARY_DIR:PATH=${REVOPOINT3DSDK_BINARY_DIR}
     "-DREVOPOINT3DSDK_LIBRARIES:STRING=${REVOPOINT3DSDK_LIBRARIES}"
@@ -390,7 +389,7 @@ if(PLUS_USE_REVOPOINT3DCAMERA)
 endif()
 
 if(PLUSBUILD_DOCUMENTATION)
-  _plus_pluslib_args(
+  plus_add_pluslib_args(
     -DPLUS_DOCUMENTATION_SEARCH_SERVER_INDEXED:BOOL=${PLUSBUILD_DOCUMENTATION_SEARCH_SERVER_INDEXED}
     -DDOXYGEN_DOT_EXECUTABLE:FILEPATH=${DOXYGEN_DOT_EXECUTABLE}
     -DDOXYGEN_EXECUTABLE:FILEPATH=${DOXYGEN_EXECUTABLE}
@@ -398,11 +397,11 @@ if(PLUSBUILD_DOCUMENTATION)
 endif()
 
 if(PLUSBUILD_DOWNLOAD_PLUSLIBDATA AND NOT PLUSBUILD_OFFLINE_BUILD)
-  _plus_pluslib_args(-DPLUSLIB_DATA_DIR:PATH=${PLUSLIB_DATA_DIR})
+  plus_add_pluslib_args(-DPLUSLIB_DATA_DIR:PATH=${PLUSLIB_DATA_DIR})
 endif()
 
 if(PLUSBUILD_BUILD_PLUSLIB_WIDGETS)
-  _plus_pluslib_args(-DQt5_DIR:PATH=${Qt5_DIR})
+  plus_add_pluslib_args(-DQt5_DIR:PATH=${Qt5_DIR})
 endif()
 
 # --------------------------------------------------------------------------
@@ -412,6 +411,8 @@ endif()
 # options declared in the top-level CMakeLists.txt. PLUS_USE_POLARIS and
 # PLUS_USE_CERTUS are deprecated spellings PlusLib does not know, and the
 # Atracsys device type is passed under its own name above.
+plus_get_pluslib_args(_pluslib_sdk_args)
+
 plus_forward_cache_variables(_pluslib_options
   PATTERNS
     "^PLUS_USE_"
