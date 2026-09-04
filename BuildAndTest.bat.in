@@ -31,15 +31,15 @@ if "%TEST_MODE%" == "-C" goto continuous
 if "%TEST_MODE%" == "-I" goto individual
 
 :experimental
-"${CMAKE_CTEST_COMMAND}" -D Experimental --output-on-failure --build-and-test %TEST_TRACK%
+"${CMAKE_CTEST_COMMAND}" ${PLUSBUILD_CTEST_CONFIG_ARG} -D Experimental --output-on-failure %TEST_TRACK%
 goto END
 
 :nightly
-"${CMAKE_CTEST_COMMAND}" -D Nightly --build-and-test %TEST_TRACK%
+"${CMAKE_CTEST_COMMAND}" ${PLUSBUILD_CTEST_CONFIG_ARG} -D Nightly %TEST_TRACK%
 goto END
 
 :continuous
-"${CMAKE_CTEST_COMMAND}" -D Continuous --build-and-test %TEST_TRACK%
+"${CMAKE_CTEST_COMMAND}" ${PLUSBUILD_CTEST_CONFIG_ARG} -D Continuous %TEST_TRACK%
 @REM Wait for some time before continue to allow checking the results of the executions
 timeout /t 15
 goto END
@@ -47,9 +47,9 @@ goto END
 :individual
 @REM Run individual tests with regexp search
 @REM Display the list of tests
-"${CMAKE_CTEST_COMMAND}" -R "%INDIVIDUAL_TEST%" -N
+"${CMAKE_CTEST_COMMAND}" ${PLUSBUILD_CTEST_CONFIG_ARG} -R "%INDIVIDUAL_TEST%" -N
 @REM Run selected tests
-"${CMAKE_CTEST_COMMAND}" -R "%INDIVIDUAL_TEST%" -V
+"${CMAKE_CTEST_COMMAND}" ${PLUSBUILD_CTEST_CONFIG_ARG} -R "%INDIVIDUAL_TEST%" -V
 goto END
 
 :BUILDFAILED

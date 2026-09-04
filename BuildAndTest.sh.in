@@ -2,8 +2,6 @@
 
 ORIGPATH=$PATH
 
-DIRCMD=0
-
 command=$0
 if [ "$1" == "-E" ] || [ "$1" == "-N" ] || [ "$1" == "-C" ] || [ "$1" == "-I" ]; then
   test_mode=$1
@@ -12,43 +10,46 @@ else
   test_mode="-E"
 fi
 
-test_track=""
+# Held as an array so that a track name containing a space survives; the
+# previous string form embedded literal quotes into the argument itself.
+test_track=()
 individual_test=""
 while [ "${1:-}" != "" ]; do
   case "$1" in
     "--test")
       shift
-      individial_test=$1
+      individual_test=$1
       ;;
     "--track")
       shift
-      test_track="--track \"$1\""
+      test_track=(--track "$1")
       ;;
   esac
   shift
 done
 
-if [ "$test_mode" == "" ] || [ "$test_mode" == "-E" ]; then
-  "@CMAKE_CTEST_COMMAND@" -C Release -D Experimental --output-on-failure --build-and-test $test_track
-fi
+# Empty for a single-configuration generator, which picks its configuration
+# at configure time.
+config_arg=(@PLUSBUILD_CTEST_CONFIG_ARG@)
 
-if [ "$test_mode" == "-N" ]; then
-  "@CMAKE_CTEST_COMMAND@" -C Release -D Nightly --build-and-test $test_track
-fi
-
-if [ "$test_mode" == "-C" ]; then
-  "@CMAKE_CTEST_COMMAND@" -C Release -D Continuous --build-and-test $test_track
-  # Wait for some time before continue to allow checking the results of the executions
-  sleep 15
-fi
-
-if [ "$test_mode" == "-I" ]; then
-  # Run individual tests with regexp search
-  # Display the list of tests
-  "@CMAKE_CTEST_COMMAND@" -C Release -R "$individial_test" -N
-  # Run selected tests
-  "@CMAKE_CTEST_COMMAND@" -C Release -R "$individial_test" -V
-fi
+case "$test_mode" in
+  "-E")
+    "@CMAKE_CTEST_COMMAND@" "${config_arg[@]}" -D Experimental --output-on-failure "${test_track[@]}"
+    ;;
+  "-N")
+    "@CMAKE_CTEST_COMMAND@" "${config_arg[@]}" -D Nightly "${test_track[@]}"
+    ;;
+  "-C")
+    "@CMAKE_CTEST_COMMAND@" "${config_arg[@]}" -D Continuous "${test_track[@]}"
+    # Pause so that the results of the run can be read before it scrolls away.
+    sleep 15
+    ;;
+  "-I")
+    # List the matching tests, then run them.
+    "@CMAKE_CTEST_COMMAND@" "${config_arg[@]}" -R "$individual_test" -N
+    "@CMAKE_CTEST_COMMAND@" "${config_arg[@]}" -R "$individual_test" -V
+    ;;
+esac
 
 PATH=$ORIGPATH
 echo "DONE"
