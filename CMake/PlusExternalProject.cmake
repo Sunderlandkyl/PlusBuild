@@ -161,8 +161,19 @@ endfunction()
 # Copy the imported location of each target next to the executables. On a
 # multi-config generator that means one copy per configuration directory; on a
 # single-config generator, one copy of the configuration being built.
+#
+# Windows only. There a DLL has to sit beside the executable that loads it,
+# because there is no run-time search path to point anywhere else. Everywhere
+# else the loader follows RPATH to the directory the library was linked from,
+# so a copy adds nothing and takes something away: file(GET_RUNTIME_DEPENDENCIES)
+# then finds the same library under two names and refuses to package either,
+# "Multiple conflicting paths found for libitkhdf5-shared-5.4.1.dylib".
 #-----------------------------------------------------------------------------
 function(plus_copy_libraries_to_runtime_dir destination)
+  if(NOT WIN32)
+    return()
+  endif()
+
   get_property(_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
   foreach(_lib IN LISTS ARGN)

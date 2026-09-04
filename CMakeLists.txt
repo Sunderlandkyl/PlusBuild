@@ -58,10 +58,20 @@ if(APPLE)
   set(PLUSBUILD_INSTALL_RPATH "@executable_path/../lib;@loader_path/../lib;@loader_path")
 elseif(UNIX)
   set(PLUSBUILD_INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN")
-  # DT_RPATH rather than DT_RUNPATH: only the loading executable's DT_RPATH is
-  # consulted when resolving a library's own dependencies, and the bundled VTK
-  # and ITK libraries need to find each other.
-  foreach(_flags CMAKE_EXE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS)
+  # DT_RPATH rather than DT_RUNPATH. A library that carries DT_RUNPATH is
+  # resolved from that alone: the loader stops consulting the DT_RPATH of the
+  # executable that pulled it in. libvtkIGSIOCommon came out with a DT_RUNPATH
+  # naming the build machine's vtk-install directory, so in an unpacked package
+  # it looked for libvtkIOImage where nothing was, and would not fall back to
+  # the "$ORIGIN/../lib" beside it.
+  #
+  # The flag goes into the compiler flags as well as the linker flags because
+  # the compiler flags are what reaches a nested superbuild. IGSIO forwards
+  # CMAKE_C_FLAGS and CMAKE_CXX_FLAGS to its inner build and nothing else, and
+  # a compiler driver hands -Wl, options to the linker at link time and ignores
+  # them when only compiling.
+  foreach(_flags CMAKE_EXE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS
+                 CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
     if(NOT "${${_flags}}" MATCHES "disable-new-dtags")
       string(APPEND ${_flags} " -Wl,--disable-new-dtags")
     endif()
