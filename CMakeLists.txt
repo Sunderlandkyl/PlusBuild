@@ -424,7 +424,9 @@ endif()
 # Qt
 #-----------------------------------------------------------------------------
 set(ep_qt_args)
-set(PLUSBUILD_QT_COMPONENTS Core Widgets Designer OpenGL Sql Test Xml XmlPatterns Concurrent Network Gui)
+# XmlPatterns is deliberately absent: nothing in Plus uses it, and it is a
+# separate Qt module that several distributions do not ship.
+set(PLUSBUILD_QT_COMPONENTS Core Widgets Designer OpenGL Sql Test Xml Concurrent Network Gui)
 if(PLUS_USE_OPTITRACK)
   list(APPEND PLUSBUILD_QT_COMPONENTS Multimedia)
 endif()
