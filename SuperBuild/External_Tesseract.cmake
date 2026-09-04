@@ -1,127 +1,66 @@
-SET(tesseract_DEPENDENCIES leptonica)
-IF(TARGET vtk)
-  SET(leptonica_DEPENDENCIES vtk) #for vtkzlib
-ENDIF()
-SET(tesseract_ROOT_DIR ${CMAKE_BINARY_DIR})
+# Tesseract needs leptonica to build and the tessdata language files to run.
+set(_tesseract_depends)
 
 # --------------------------------------------------------------------------
 # leptonica
-SetGitRepositoryTag(
-  leptonica
-  "https://github.com/PlusToolkit/leptonica.git"
-  "master"
-  )
+if(leptonica_DIR)
+  find_package(leptonica REQUIRED NO_MODULE)
+  set(PLUS_leptonica_DIR "${leptonica_DIR}" CACHE INTERNAL "Path to use as leptonica_DIR")
+else()
+  set(_leptonica_depends)
+  if(TARGET vtk)
+    set(_leptonica_depends vtk) # for vtkzlib and vtkpng
+  endif()
 
-IF(leptonica_DIR)
-  FIND_PACKAGE(leptonica REQUIRED NO_MODULE)
-
-  SET(PLUS_leptonica_DIR ${leptonica_DIR} CACHE INTERNAL "Path to store leptonica binaries.")
-ELSE()
-  SET (PLUS_leptonica_src_DIR ${tesseract_ROOT_DIR}/leptonica CACHE INTERNAL "Path to store leptonica contents.")
-  SET (PLUS_leptonica_prefix_DIR ${tesseract_ROOT_DIR}/leptonica-prefix CACHE INTERNAL "Path to store leptonica prefix data.")
-  SET (PLUS_leptonica_DIR "${tesseract_ROOT_DIR}/leptonica-bin" CACHE INTERNAL "Path to store leptonica binaries.")
-  ExternalProject_Add( leptonica
-    PREFIX ${PLUS_leptonica_prefix_DIR}
-    "${PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS}"
-    SOURCE_DIR "${PLUS_leptonica_src_DIR}"
-    BINARY_DIR "${PLUS_leptonica_DIR}"
-    #--Download step--------------
-    GIT_REPOSITORY ${leptonica_GIT_REPOSITORY}
-    GIT_TAG ${leptonica_GIT_TAG}
-    #--Configure step-------------
-    CMAKE_ARGS
-        ${ep_common_args}
-        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-        -DCMAKE_CXX_FLAGS:STRING=${ep_common_cxx_flags}
-        -DCMAKE_C_FLAGS:STRING=${ep_common_c_flags}
-        -DCMAKE_PREFIX_PATH:STRING=${CMAKE_PREFIX_PATH}
-        -DVTK_DIR:PATH=${PLUS_VTK_DIR} #get vtkzlib and vtkpng from vtk
-    #--Build step-----------------
-    #--Install step-----------------
-    INSTALL_COMMAND "" #don't install
-    #--Dependencies-----------------
-    DEPENDS ${leptonica_DEPENDENCIES}
+  plus_add_external_project(leptonica
+    GIT_REPOSITORY "https://github.com/PlusToolkit/leptonica.git"
+    GIT_TAG master
+    DEPENDS ${_leptonica_depends}
+    NO_BUILD_ALWAYS
+    CMAKE_CACHE_ARGS
+      # leptonica declares a minimum CMake version that CMake 4 no longer accepts.
+      -DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5
+      -DCMAKE_PREFIX_PATH:STRING=${CMAKE_PREFIX_PATH}
+      -DVTK_DIR:PATH=${PLUS_VTK_DIR}
     )
-ENDIF()
+  list(APPEND _tesseract_depends leptonica)
+endif()
 
 # --------------------------------------------------------------------------
-# tessdata
-SetGitRepositoryTag(
-  tessdata
-  "https://github.com/PlusToolkit/tessdata.git"
-  "master"
-  )
-
-IF(tessdata_DIR)
-  IF(NOT EXISTS ${tessdata_DIR})
-    MESSAGE(FATAL_ERROR "Folder specified by tessdata_DIR does not exist.")
-  ENDIF()
-
-  SET(PLUS_tessdata_src_DIR ${tessdata_DIR} CACHE INTERNAL "Path to store tesseract language data contents.")
-ELSE()
-  SET (PLUS_tessdata_src_DIR ${tesseract_ROOT_DIR}/tessdata CACHE INTERNAL "Path to store tesseract language data contents.")
-  SET (PLUS_tessdata_prefix_DIR ${tesseract_ROOT_DIR}/tessdata-prefix CACHE INTERNAL "Path to store tesseract language prefix data.")
-  ExternalProject_Add( tessdata
-    "${PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS}"
-    PREFIX ${PLUS_tessdata_prefix_DIR}
-    SOURCE_DIR "${PLUS_tessdata_src_DIR}"
-    BINARY_DIR "${PLUS_tessdata_src_DIR}"
-    #--Download step--------------
-    GIT_REPOSITORY ${tessdata_GIT_REPOSITORY}
-    GIT_TAG ${tessdata_GIT_TAG}
-    #--Configure step-------------
-    CONFIGURE_COMMAND ""
-    #--Build step-----------------
-    BUILD_COMMAND ""
-    #--Install step-----------------
-    #--Dependencies-----------------
-    INSTALL_COMMAND ""
-    DEPENDS ""
+# tessdata, the trained language files
+if(tessdata_DIR)
+  if(NOT EXISTS "${tessdata_DIR}")
+    message(FATAL_ERROR "The folder named by tessdata_DIR does not exist.")
+  endif()
+  set(PLUS_tessdata_src_DIR "${tessdata_DIR}" CACHE INTERNAL "Path to the tesseract language data")
+else()
+  plus_add_external_project(tessdata
+    GIT_REPOSITORY "https://github.com/PlusToolkit/tessdata.git"
+    GIT_TAG master
+    SOURCE_DIR "${CMAKE_BINARY_DIR}/tessdata"
+    BINARY_DIR "${CMAKE_BINARY_DIR}/tessdata"
+    DOWNLOAD_ONLY
     )
-  SET(tesseract_DEPENDENCIES ${tesseract_DEPENDENCIES} tessdata)
-ENDIF()
+  set(PLUS_tessdata_src_DIR "${PLUS_tessdata_SRC_DIR}" CACHE INTERNAL "Path to the tesseract language data")
+  list(APPEND _tesseract_depends tessdata)
+endif()
 
 # --------------------------------------------------------------------------
 # tesseract
-IF(tesseract_DIR)
-  FIND_PACKAGE(tesseract REQUIRED NO_MODULE)
-
-  SET (PLUS_tesseract_DIR ${tesseract_DIR} CACHE INTERNAL "Path to store tesseract binaries")
-ELSE()
-  SetGitRepositoryTag(
-    tesseract
-    "https://github.com/PlusToolkit/tesseract-ocr-cmake.git"
-    "master"
-    )
-
-  SET (PLUS_tesseract_src_DIR ${tesseract_ROOT_DIR}/tesseract CACHE INTERNAL "Path to store tesseract contents.")
-  SET (PLUS_tesseract_prefix_DIR ${tesseract_ROOT_DIR}/tesseract-prefix CACHE INTERNAL "Path to store tesseract prefix data.")
-  SET (PLUS_tesseract_DIR "${tesseract_ROOT_DIR}/tesseract-bin" CACHE INTERNAL "Path to store tesseract binaries")
-  ExternalProject_Add( tesseract
-    PREFIX ${PLUS_tesseract_prefix_DIR}
-    "${PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS}"
-    SOURCE_DIR "${PLUS_tesseract_src_DIR}"
-    BINARY_DIR "${PLUS_tesseract_DIR}"
-    #--Download step--------------
-    GIT_REPOSITORY ${tesseract_GIT_REPOSITORY}
-    GIT_TAG ${tesseract_GIT_TAG}
-    #--Configure step-------------
-    CMAKE_ARGS
-      ${ep_common_args}
-      -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-      -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-      -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
-      -DCMAKE_CXX_FLAGS:STRING=${ep_common_cxx_flags}
-      -DCMAKE_C_FLAGS:STRING=${ep_common_c_flags}
+if(tesseract_DIR)
+  find_package(tesseract REQUIRED NO_MODULE)
+  set(PLUS_tesseract_DIR "${tesseract_DIR}" CACHE INTERNAL "Path to use as tesseract_DIR")
+else()
+  plus_add_external_project(tesseract
+    GIT_REPOSITORY "https://github.com/PlusToolkit/tesseract-ocr-cmake.git"
+    GIT_TAG master
+    DEPENDS ${_tesseract_depends}
+    CMAKE_CACHE_ARGS
+      # tesseract declares a minimum CMake version that CMake 4 no longer accepts.
+      -DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5
       -DCMAKE_PREFIX_PATH:STRING=${CMAKE_PREFIX_PATH}
-      -DCMAKE_INSTALL_PREFIX:PATH=${PLUS_tesseract_DIR}
+      -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/tesseract-bin
       -DLeptonica_DIR:PATH=${PLUS_leptonica_DIR}
       -Dtesseract_DATA_DIR:PATH=${PLUS_tessdata_src_DIR}
-    #--Build step-----------------
-    BUILD_ALWAYS 1
-    #--Install step-----------------
-    #--Dependencies-----------------
-    DEPENDS ${tesseract_DEPENDENCIES}
-  )
-ENDIF()
+    )
+endif()

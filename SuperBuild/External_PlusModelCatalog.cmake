@@ -1,35 +1,10 @@
-# --------------------------------------------------------------------------
-# PlusModelCatalog
-
-SetGitRepositoryTag(
-  PlusModelCatalog
-  "https://github.com/PlusToolkit/PlusModelCatalog.git"
-  "master"
-  )
-
-SET (PLUS_PLUSMODELCATALOG_DIR ${CMAKE_BINARY_DIR}/PlusModelCatalog CACHE INTERNAL "Path to store Plus Model Catalog.")
-ExternalProject_Add(PlusModelCatalog
-  "${PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS}"
-  SOURCE_DIR "${PLUS_PLUSMODELCATALOG_DIR}"
-  BINARY_DIR "PlusModelCatalog-bin"
-  #--Download step--------------
-  GIT_REPOSITORY ${PlusModelCatalog_GIT_REPOSITORY}
-  GIT_TAG ${PlusModelCatalog_GIT_TAG}
-  #--Configure step-------------
-  CMAKE_ARGS
-    ${ep_common_args}
-    -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-    -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
+# Plus 3D-printable model catalog
+plus_add_external_project(PlusModelCatalog
+  GIT_REPOSITORY "https://github.com/PlusToolkit/PlusModelCatalog.git"
+  GIT_TAG master
+  DEPENDS ${PlusModelCatalog_DEPENDENCIES}
+  CMAKE_CACHE_ARGS
     -DPLUSLIB_DIR:PATH=${PLUSLIB_DIR}
     -DGIT_EXECUTABLE:FILEPATH=${GIT_EXECUTABLE}
-    -DGITCOMMAND:FILEPATH=${GITCOMMAND}
-    -DCMAKE_CXX_FLAGS:STRING=${ep_common_cxx_flags}
-    -DCMAKE_C_FLAGS:STRING=${ep_common_c_flags}
-  #--Build step-----------------
-  BUILD_ALWAYS 1
-  #--Install step-----------------
-  INSTALL_COMMAND ""
-  DEPENDS ${PlusModelCatalog_DEPENDENCIES}
   )
-SET(PlusModelCatalog_DIR ${CMAKE_BINARY_DIR}/PlusModelCatalog-bin CACHE PATH "The directory containing Plus Model Catalog generated files" FORCE)
+set(PlusModelCatalog_DIR "${PLUS_PlusModelCatalog_BIN_DIR}" CACHE PATH "The directory containing Plus Model Catalog generated files" FORCE)

@@ -1,65 +1,34 @@
-# Windows 64 bit path hints
-SET (PLATFORM_SUFFIX "Win10 - x64")
-IF(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
-  # Windows 32 bit path hints
-  SET(PLATFORM_SUFFIX "Win10 - x86")
-ENDIF()
+# The Interson Array SDK itself is not redistributable and has to be installed.
+set(_platform_suffix "Win10 - x64")
+if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+  set(_platform_suffix "Win10 - x86")
+endif()
 
-SET(IntersonArray_PATH_HINTS
-  C:/IntersonArraySDK/Libraries/${PLATFORM_SUFFIX}
-  ../PLTools/Interson/ArraySDK_3.007_2021-11/Libraries/${PLATFORM_SUFFIX}
-  ../../PLTools/Interson/ArraySDK_3.007_2021-11/Libraries/${PLATFORM_SUFFIX}
-  )
-
-# Check for path to IntersonArraySDK and raise an error during configure step
-FIND_PATH(IntersonArraySDK_DIR
+find_path(IntersonArraySDK_DIR
   NAMES IntersonArray.dll
-  PATHS ${IntersonArray_PATH_HINTS} )
-IF(NOT IntersonArraySDK_DIR)
-  MESSAGE(FATAL_ERROR "Please specify the path to the IntersonArraySDK in IntersonArraySDK_DIR")
-ENDIF()
+  PATHS
+    "C:/IntersonArraySDK/Libraries/${_platform_suffix}"
+    "../PLTools/Interson/ArraySDK_3.007_2021-11/Libraries/${_platform_suffix}"
+    "../../PLTools/Interson/ArraySDK_3.007_2021-11/Libraries/${_platform_suffix}"
+  DOC "Path to the Interson Array SDK libraries"
+  )
+if(NOT IntersonArraySDK_DIR)
+  message(FATAL_ERROR "Please set IntersonArraySDK_DIR to the path of the Interson Array SDK.")
+endif()
 
-IF(IntersonArraySDKCxx_DIR)
-  # IntersonArraySDKCxx has been built already
-  FIND_PACKAGE(IntersonArraySDKCxx REQUIRED PATHS ${IntersonArraySDKCxx_DIR} NO_DEFAULT_PATH)
+if(IntersonArraySDKCxx_DIR)
+  find_package(IntersonArraySDKCxx REQUIRED PATHS "${IntersonArraySDKCxx_DIR}" NO_DEFAULT_PATH)
+  message(STATUS "Using IntersonArraySDKCxx available at: ${IntersonArraySDKCxx_DIR}")
+  plus_copy_libraries_to_runtime_dir("${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" ${IntersonArraySDKCxx_LIBRARIES})
 
-  MESSAGE(STATUS "Using IntersonArraySDKCxx available at: ${IntersonArraySDKCxx_DIR}")
-
-  PlusCopyLibrariesToDirectory(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${IntersonArraySDKCxx_LIBRARIES})
-
-  SET(PLUS_IntersonArraySDKCxx_DIR "${IntersonArraySDKCxx_DIR}" CACHE INTERNAL "Path to store IntersonArraySDKCxx binaries")
-ELSE()
-  # IntersonArraySDKCxx has not been built yet, so download and build it as an external project
-  SetGitRepositoryTag(
-    IntersonArraySDKCxx
-    "https://github.com/KitwareMedical/IntersonArraySDKCxx.git"
-    "master"
-    )
-
-  SET (PLUS_IntersonArraySDKCxx_SRC_DIR "${CMAKE_BINARY_DIR}/IntersonArraySDKCxx")
-  SET (PLUS_IntersonArraySDKCxx_DIR "${CMAKE_BINARY_DIR}/IntersonArraySDKCxx-bin" CACHE INTERNAL "Path to store IntersonArraySDKCxx binaries")
-  ExternalProject_Add( IntersonArraySDKCxx
-    PREFIX "${CMAKE_BINARY_DIR}/IntersonArraySDKCxx-prefix"
-    SOURCE_DIR "${PLUS_IntersonArraySDKCxx_SRC_DIR}"
-    BINARY_DIR "${PLUS_IntersonArraySDKCxx_DIR}"
-    #--Download step--------------
-    GIT_REPOSITORY ${IntersonArraySDKCxx_GIT_REPOSITORY}
-    GIT_TAG ${IntersonArraySDKCxx_GIT_TAG}
-    #--Configure step-------------
-    CMAKE_ARGS
-      ${ep_common_args}
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-      -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-      -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
-      -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
-      -DBUILD_TESTING:BOOL=OFF
-      -DCMAKE_CXX_FLAGS:STRING=${ep_common_cxx_flags}
-      -DCMAKE_C_FLAGS:STRING=${ep_common_c_flags}
-      -DIntersonArraySDK_DIR:PATH=${IntersonArraySDK_DIR}
-    #--Build step-----------------
-    BUILD_ALWAYS 1
-    #--Install step-----------------
-    INSTALL_COMMAND ""
+  set(PLUS_IntersonArraySDKCxx_DIR "${IntersonArraySDKCxx_DIR}" CACHE INTERNAL "Path to use as IntersonArraySDKCxx_DIR")
+else()
+  plus_add_external_project(IntersonArraySDKCxx
+    GIT_REPOSITORY "https://github.com/KitwareMedical/IntersonArraySDKCxx.git"
+    GIT_TAG master
     DEPENDS ${IntersonArraySDKCxx_DEPENDENCIES}
+    CMAKE_CACHE_ARGS
+      -DBUILD_TESTING:BOOL=OFF
+      -DIntersonArraySDK_DIR:PATH=${IntersonArraySDK_DIR}
     )
-ENDIF()
+endif()

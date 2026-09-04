@@ -1,53 +1,26 @@
-IF(aruco_DIR)
-  FIND_PACKAGE(aruco 2.0.19 REQUIRED NO_MODULE)
+if(aruco_DIR)
+  find_package(aruco 2.0.19 REQUIRED NO_MODULE)
+  message(STATUS "Using aruco available at: ${aruco_DIR}")
+  plus_copy_libraries_to_runtime_dir("${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" ${aruco_LIBS})
 
-  MESSAGE(STATUS "Using aruco available at: ${aruco_DIR}")
+  set(PLUS_aruco_DIR "${aruco_DIR}" CACHE INTERNAL "Path to use as aruco_DIR")
+else()
+  set(_aruco_depends)
+  if(TARGET OpenCV)
+    set(_aruco_depends OpenCV)
+  endif()
 
-  # Copy libraries to CMAKE_RUNTIME_OUTPUT_DIRECTORY
-  PlusCopyLibrariesToDirectory(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${aruco_LIBS})
-
-  SET (PLUS_aruco_DIR ${aruco_DIR} CACHE INTERNAL "Path to store aruco binaries")
-ELSE()
-  # aruco has not been built yet, so download and build it as an external project
-  SetGitRepositoryTag(
-    aruco
-    "https://github.com/PlusToolkit/aruco.git"
-    "master"
-    )
-
-  SET (PLUS_aruco_src_DIR ${CMAKE_BINARY_DIR}/aruco CACHE INTERNAL "Path to store aruco contents")
-  SET (PLUS_aruco_prefix_DIR ${CMAKE_BINARY_DIR}/aruco-prefix CACHE INTERNAL "Path to store aruco prefix data.")
-  SET (PLUS_aruco_DIR ${CMAKE_BINARY_DIR}/aruco-bin CACHE INTERNAL "Path to store aruco binaries.")
-
-  ExternalProject_Add( aruco
-    PREFIX ${PLUS_aruco_prefix_DIR}
-    "${PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS}"
-    SOURCE_DIR "${PLUS_aruco_src_DIR}"
-    BINARY_DIR "${PLUS_aruco_DIR}"
-    #--Download step--------------
-    GIT_REPOSITORY ${aruco_GIT_REPOSITORY}
-    GIT_TAG ${aruco_GIT_TAG}
-    #--Configure step-------------
-    CMAKE_ARGS
-      ${ep_common_args}
-      ${aruco_PLATFORM_SPECIFIC_ARGS}
-      -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-      -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-      -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
-      -DOpenCV_INSTALL_BINARIES_PREFIX:STRING= # Install to prefix directly, not arch/compiler/etc...
-      -DCMAKE_CXX_FLAGS:STRING=${ep_common_cxx_flags}
-      -DCMAKE_C_FLAGS:STRING=${ep_common_c_flags}
+  plus_add_external_project(aruco
+    GIT_REPOSITORY "https://github.com/PlusToolkit/aruco.git"
+    GIT_TAG master
+    DEPENDS ${_aruco_depends}
+    CMAKE_CACHE_ARGS
+      # aruco declares a minimum CMake version that CMake 4 no longer accepts.
+      -DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5
       -DOpenCV_DIR:PATH=${PLUS_OpenCV_DIR}
-      -DUSE_OWN_EIGEN3=OFF
+      -DOpenCV_INSTALL_BINARIES_PREFIX:STRING= # Install into the prefix directly, not under arch/compiler
+      -DUSE_OWN_EIGEN3:BOOL=OFF
       -DBUILD_TESTS:BOOL=OFF
       -DBUILD_PERF_TESTS:BOOL=OFF
-      -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
-    #--Build step-----------------
-    BUILD_ALWAYS 1
-    #--Install step-----------------
-    INSTALL_COMMAND "" # don't install
-    #--Dependencies-----------------
-    DEPENDS OpenCV
-  )
-ENDIF()
+    )
+endif()

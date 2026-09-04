@@ -1,119 +1,87 @@
-SET(PLUSBUILD_OpenCV_VERSION "4.5.5" CACHE STRING "Set OpenCV version (version: [major].[minor].[patch])")
+set(PLUSBUILD_OpenCV_VERSION "4.5.5" CACHE STRING "Set OpenCV version (version: [major].[minor].[patch])")
 
-IF(OpenCV_DIR)
-  FIND_PACKAGE(OpenCV ${PLUSBUILD_OpenCV_VERSION} REQUIRED NO_MODULE)
+if(OpenCV_DIR)
+  find_package(OpenCV ${PLUSBUILD_OpenCV_VERSION} REQUIRED NO_MODULE)
+  message(STATUS "Using OpenCV available at: ${OpenCV_DIR}")
+  plus_copy_libraries_to_runtime_dir("${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" ${OpenCV_LIBS})
 
-  # Copy libraries to CMAKE_RUNTIME_OUTPUT_DIRECTORY
-  PlusCopyLibrariesToDirectory(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${OpenCV_LIBS})
+  set(PLUS_OpenCV_DIR "${OpenCV_DIR}" CACHE INTERNAL "Path to use as OpenCV_DIR")
 
-  SET(PLUS_OpenCV_DIR ${OpenCV_DIR} CACHE INTERNAL "Path to store OpenCV binaries")
+  # Other external projects name OpenCV as a dependency, so the target has to
+  # exist even when OpenCV is not built here.
+  add_custom_target(OpenCV)
+else()
+  set(_opencv_options)
 
-  # Superbuild relies on existence of OpenCV target for dependency graph
-  # Create a dummy target
-  ADD_CUSTOM_TARGET(OpenCV)
-ELSE()
-  FIND_PACKAGE(CUDA QUIET)
+  find_package(CUDA QUIET)
+  if(CUDA_FOUND)
+    # 32-bit CUDA was dropped after 6.5.
+    if(CMAKE_SIZEOF_VOID_P EQUAL 4 AND CUDA_VERSION VERSION_GREATER "6.5")
+      list(APPEND _opencv_options -DWITH_CUDA:BOOL=OFF)
+    else()
+      list(APPEND _opencv_options
+        -DWITH_CUDA:BOOL=ON
+        -DCUDA_TOOLKIT_ROOT_DIR:PATH=${CUDA_TOOLKIT_ROOT_DIR})
+    endif()
 
-  SET(OpenCV_PLATFORM_SPECIFIC_ARGS)
-  SET(_cuda OFF)
-  IF(CUDA_FOUND)
-    IF(MSVC AND NOT "${CMAKE_GENERATOR}" MATCHES "Win64")
-      # CUDA 32 bit is only available on versions <= 6.5
-      IF(NOT ${CUDA_VERSION} VERSION_GREATER "6.5")
-        SET(_cuda ON)
-        LIST(APPEND OpenCV_PLATFORM_SPECIFIC_ARGS -DCUDA_TOOLKIT_ROOT_DIR:PATH=${CUDA_TOOLKIT_ROOT_DIR})
-      ENDIF()
-    ELSE()
-      SET(_cuda ON)
-      LIST(APPEND OpenCV_PLATFORM_SPECIFIC_ARGS -DCUDA_TOOLKIT_ROOT_DIR:PATH=${CUDA_TOOLKIT_ROOT_DIR})
-    ENDIF()
+    set(_generations "Fermi" "Kepler" "Maxwell")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL 8.0.0)
+      list(APPEND _generations "Pascal" "Volta")
+    endif()
+    if(CUDA_VERSION VERSION_GREATER_EQUAL 10.0.0)
+      list(APPEND _generations "Turing")
+    endif()
+    if(NOT CMAKE_CROSSCOMPILING)
+      list(APPEND _generations "Auto")
+    endif()
 
-    IF(_cuda)
-      LIST(APPEND OpenCV_PLATFORM_SPECIFIC_ARGS -DWITH_CUDA:BOOL=ON)
-    ELSE()
-      LIST(APPEND OpenCV_PLATFORM_SPECIFIC_ARGS -DWITH_CUDA:BOOL=OFF)
-    ENDIF()
+    set(PLUSBUILD_OpenCV_CUDA_GENERATION "" CACHE STRING "Build CUDA device code only for specific GPU architecture. Leave empty to build for all architectures.")
+    set_property(CACHE PLUSBUILD_OpenCV_CUDA_GENERATION PROPERTY STRINGS "" ${_generations})
 
-    SET(_generations "Fermi" "Kepler" "Maxwell")
-    IF(${CUDA_VERSION} VERSION_GREATER_EQUAL 8.0.0)
-      LIST(APPEND _generations "Pascal" "Volta")
-    ENDIF()
-    IF(${CUDA_VERSION} VERSION_GREATER_EQUAL 10.0.0)
-      LIST(APPEND _generations "Turing")
-    ENDIF()
-    IF(NOT CMAKE_CROSSCOMPILING)
-      LIST(APPEND _generations "Auto")
-    ENDIF()
+    if(PLUSBUILD_OpenCV_CUDA_GENERATION AND NOT PLUSBUILD_OpenCV_CUDA_GENERATION IN_LIST _generations)
+      string(REPLACE ";" ", " _generations "${_generations}")
+      message(FATAL_ERROR "Only the CUDA ${_generations} generations are supported.")
+    endif()
+    list(APPEND _opencv_options -DCUDA_GENERATION:STRING=${PLUSBUILD_OpenCV_CUDA_GENERATION})
+  else()
+    list(APPEND _opencv_options -DWITH_CUDA:BOOL=OFF)
+  endif()
 
-    SET(PLUSBUILD_OpenCV_CUDA_GENERATION "" CACHE STRING "Build CUDA device code only for specific GPU architecture. Leave empty to build for all architectures.")
-    set_property( CACHE PLUSBUILD_OpenCV_CUDA_GENERATION PROPERTY STRINGS "" ${_generations} )
+  if(Qt5_FOUND)
+    list(APPEND _opencv_options -DWITH_QT:BOOL=ON -DQt5_DIR:PATH=${Qt5_DIR})
+  endif()
 
-    IF(PLUSBUILD_OpenCV_CUDA_GENERATION)
-      IF(NOT ";${_generations};" MATCHES ";${PLUSBUILD_OpenCV_CUDA_GENERATION};")
-        STRING(REPLACE ";" ", " _generations "${_generations}")
-        MESSAGE(FATAL_ERROR "ERROR: Only CUDA ${_generations} generations are supported.")
-      ENDIF()
-    ENDIF()
+  if(MSVC)
+    list(APPEND _opencv_options -DWITH_MSMF:BOOL=ON)
+  endif()
 
-    LIST(APPEND OpenCV_PLATFORM_SPECIFIC_ARGS -DCUDA_GENERATION:STRING=${PLUSBUILD_OpenCV_CUDA_GENERATION})
-  ELSE()
-    LIST(APPEND OpenCV_PLATFORM_SPECIFIC_ARGS -DWITH_CUDA:BOOL=OFF)
-  ENDIF()
+  if(NOT PLUSBUILD_BUILD_SHARED_LIBS)
+    list(APPEND _opencv_options -DBUILD_WITH_STATIC_CRT:BOOL=OFF)
+  endif()
 
-  IF(Qt5_FOUND)
-    LIST(APPEND OpenCV_PLATFORM_SPECIFIC_ARGS -DWITH_QT:BOOL=ON -DQt5_DIR:PATH=${Qt5_DIR})
-  ENDIF()
+  set(_opencv_depends)
+  if(TARGET vtk)
+    set(_opencv_depends vtk)
+  endif()
 
-  IF(MSVC)
-    LIST(APPEND OpenCV_PLATFORM_SPECIFIC_ARGS -DWITH_MSMF:BOOL=ON)
-  ENDIF()
-
-  IF(NOT PLUSBUILD_BUILD_SHARED_LIBS)
-    LIST(APPEND OpenCV_PLATFORM_SPECIFIC_ARGS -DBUILD_WITH_STATIC_CRT:BOOL=OFF)
-  ENDIF()
-
-  # No OpenCV is specified, so download and build
-  SetGitRepositoryTag(
-    OpenCV
-    "https://github.com/opencv/opencv.git"
-    ${PLUSBUILD_OpenCV_VERSION}
-    )
-
-  SET (PLUS_OpenCV_src_DIR ${CMAKE_BINARY_DIR}/OpenCV CACHE INTERNAL "Path to store OpenCV contents.")
-  SET (PLUS_OpenCV_prefix_DIR ${CMAKE_BINARY_DIR}/OpenCV-prefix CACHE INTERNAL "Path to store OpenCV prefix data.")
-  SET (PLUS_OpenCV_DIR ${CMAKE_BINARY_DIR}/OpenCV-bin CACHE INTERNAL "Path to store OpenCV binaries")
-  ExternalProject_Add( OpenCV
-    PREFIX ${PLUS_OpenCV_prefix_DIR}
-    "${PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS}"
-    SOURCE_DIR "${PLUS_OpenCV_src_DIR}"
-    BINARY_DIR "${PLUS_OpenCV_DIR}"
-    #--Download step--------------
-    GIT_REPOSITORY ${OpenCV_GIT_REPOSITORY}
-    GIT_TAG ${OpenCV_GIT_TAG}
-    #--Configure step-------------
-    CMAKE_ARGS
-      ${ep_common_args}
+  plus_add_external_project(OpenCV
+    GIT_REPOSITORY "https://github.com/opencv/opencv.git"
+    GIT_TAG "${PLUSBUILD_OpenCV_VERSION}"
+    DEPENDS ${_opencv_depends}
+    CMAKE_CACHE_ARGS
       ${ep_qt_args}
-      ${OpenCV_PLATFORM_SPECIFIC_ARGS}
       -DEXECUTABLE_OUTPUT_PATH:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-      -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-      -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
-      -DOpenCV_INSTALL_BINARIES_PREFIX:STRING= # Install to prefix directly, not arch/compiler/etc...
-      -DOPENCV_INSTALL_BINARIES_PREFIX:STRING= # Install to prefix directly, not arch/compiler/etc...
-      -DCMAKE_CXX_FLAGS:STRING=${ep_common_cxx_flags}
-      -DCMAKE_C_FLAGS:STRING=${ep_common_c_flags}
+      # Install into the prefix directly, not under arch/compiler subdirectories.
+      -DOpenCV_INSTALL_BINARIES_PREFIX:STRING=
+      -DOPENCV_INSTALL_BINARIES_PREFIX:STRING=
       -DVTK_DIR:PATH=${PLUS_VTK_DIR}
       -DWITH_VTK:BOOL=ON
       -DBUILD_TESTS:BOOL=OFF
       -DBUILD_PERF_TESTS:BOOL=OFF
-      -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
       -DBUILD_DOCS:BOOL=OFF
-    #--Build step-----------------
-    BUILD_ALWAYS 1
-    #--Install step-----------------
-    INSTALL_COMMAND "" # Do not install, we have access to ${PLUS_OpenCV_DIR}/OpenCVConfig.cmake
-    #--Dependencies-----------------
-    DEPENDS ${VTK_BUILD_DEPENDENCY_TARGET}
+      ${_opencv_options}
     )
-ENDIF()
+
+  # Referred to in lower case by OvrvisionPro's pragma workaround.
+  set(PLUS_OpenCV_src_DIR "${PLUS_OpenCV_SRC_DIR}" CACHE INTERNAL "Path to OpenCV sources")
+endif()

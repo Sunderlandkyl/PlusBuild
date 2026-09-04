@@ -1,50 +1,27 @@
-IF(SeekCameraLib_DIR)
-  FIND_PACKAGE(SeekCameraLib REQUIRED NO_MODULE)
+if(SeekCameraLib_DIR)
+  find_package(SeekCameraLib REQUIRED NO_MODULE)
+  message(STATUS "Using SeekCameraLib available at: ${SeekCameraLib_DIR}")
+  plus_copy_libraries_to_runtime_dir("${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" ${SeekCameraLib_LIBRARIES})
 
-  MESSAGE(STATUS "Using SeekCameraLib available at: ${SeekCameraLib_DIR}")
+  set(PLUS_SeekCameraLib_DIR "${SeekCameraLib_DIR}" CACHE INTERNAL "Path to use as SeekCameraLib_DIR")
+else()
+  set(_seek_depends ${SeekCameraLib_DEPENDENCIES})
+  foreach(_dependency LibUSB OpenCV)
+    if(TARGET ${_dependency})
+      list(APPEND _seek_depends ${_dependency})
+    endif()
+  endforeach()
 
-  # Copy libraries to CMAKE_RUNTIME_OUTPUT_DIRECTORY
-  PlusCopyLibrariesToDirectory(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${SeekCameraLib_LIBRARIES})
-
-  SET(PLUS_SeekCameraLib_DIR ${SeekCameraLib_DIR} CACHE INTERNAL "Path to store SeekCameraLib binaries")
-ELSE()
-  # SeekCameraLib has not been built yet, so download and build it as an external project
-  SetGitRepositoryTag(
-    SeekCameraLib
-    "https://github.com/medtec4susdev/libseek-thermal.git"
-    master
-    )
-
-  SET (PLUS_SeekCameraLib_SRC_DIR "${CMAKE_BINARY_DIR}/SeekCameraLib")
-  SET (PLUS_SeekCameraLib_DIR "${CMAKE_BINARY_DIR}/SeekCameraLib-bin" CACHE INTERNAL "Path to store SeekCameraLib binaries")
-
-  ExternalProject_Add( SeekCameraLib
-    "${PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS}"
-    PREFIX "${CMAKE_BINARY_DIR}/SeekCameraLib-prefix"
-    SOURCE_DIR "${PLUS_SeekCameraLib_SRC_DIR}"
-    BINARY_DIR "${PLUS_SeekCameraLib_DIR}"
-    #--Download step--------------
-    GIT_REPOSITORY ${SeekCameraLib_GIT_REPOSITORY}
-    GIT_TAG ${SeekCameraLib_GIT_TAG}
-    #--Configure step-------------
-    CMAKE_ARGS
-      ${ep_common_args}
+  plus_add_external_project(SeekCameraLib
+    GIT_REPOSITORY "https://github.com/medtec4susdev/libseek-thermal.git"
+    GIT_TAG master
+    DEPENDS ${_seek_depends}
+    CMAKE_CACHE_ARGS
       -DLibUSB_ROOT_DIR:PATH=${LibUSB_ROOT_DIR}
       -DOpenCV_DIR:PATH=${PLUS_OpenCV_DIR}
-      -DBUILD_EXAMPLES:BOOL=FALSE
-      -DINSTALL_DLL:BOOL=FALSE
-      -DWITH_ADDRESS_SANITIZER:BOOL=FALSE
-      -DWITH_DEBUG_VERBOSITY:BOOL=FALSE
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-      -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-      -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
-      -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
-      -DCMAKE_CXX_FLAGS:STRING=${ep_common_cxx_flags}
-      -DCMAKE_C_FLAGS:STRING=${ep_common_c_flags}
-    #--Build step-----------------
-    BUILD_ALWAYS 1
-    #--Install step-----------------
-    INSTALL_COMMAND ""
-    DEPENDS LibUSB OpenCV ${SeekCameraLib_DEPENDENCIES}
-   )
-ENDIF()
+      -DBUILD_EXAMPLES:BOOL=OFF
+      -DINSTALL_DLL:BOOL=OFF
+      -DWITH_ADDRESS_SANITIZER:BOOL=OFF
+      -DWITH_DEBUG_VERBOSITY:BOOL=OFF
+    )
+endif()

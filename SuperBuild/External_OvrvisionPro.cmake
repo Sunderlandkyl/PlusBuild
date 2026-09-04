@@ -1,65 +1,36 @@
-IF(OvrvisionPro_DIR)
-  FIND_PACKAGE(OvrvisionPro REQUIRED NO_MODULE)
+if(OvrvisionPro_DIR)
+  find_package(OvrvisionPro REQUIRED NO_MODULE)
+  message(STATUS "Using OvrvisionPro available at: ${OvrvisionPro_DIR}")
+  plus_copy_libraries_to_runtime_dir("${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" OvrvisionPro)
 
-  MESSAGE(STATUS "Using OvrvisionPro available at: ${OvrvisionPro_DIR}")
+  set(PLUS_OvrvisionPro_DIR "${OvrvisionPro_DIR}" CACHE INTERNAL "Path to use as OvrvisionPro_DIR")
+else()
+  set(_ovrvision_depends ${OvrvisionPro_DEPENDENCIES})
+  if(TARGET OpenCV)
+    list(APPEND _ovrvision_depends OpenCV)
+  endif()
 
-  # Copy libraries to CMAKE_RUNTIME_OUTPUT_DIRECTORY
-  PlusCopyLibrariesToDirectory(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} OvrvisionPro)
+  # The OvrvisionPro SDK reaches for ippicvmt.lib through #pragma comment(lib),
+  # so the directory holding it has to be passed in directly. Only the MSVC
+  # builds of OpenCV ship it.
+  set(_ovrvision_options)
+  if(MSVC)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+      set(_ippicv_arch intel64)
+    else()
+      set(_ippicv_arch ia32)
+    endif()
+    set(_ovrvision_options
+      -DPragmaHack_DIR:PATH=${PLUS_OpenCV_src_DIR}/3rdparty/ippicv/unpack/ippicv_win/lib/${_ippicv_arch})
+  endif()
 
-  SET(PLUS_OvrvisionPro_DIR ${OvrvisionPro_DIR} CACHE INTERNAL "Path to store OvrvisionPro binaries")
-ELSE()
-  IF(NOT OpenCV_FOUND)
-    # We are building our own OpenCV, make sure the dependency order is set
-    SET(OvrvisionPro_DEPENDENCIES OpenCV)
-  ELSE()
-    SET(OvrvisionPro_DEPENDENCIES)
-  ENDIF()
-
-  # --------------------------------------------------------------------------
-  # OvrvisionPro SDK
-  SET (PLUS_OvrvisionPro_src_DIR ${CMAKE_BINARY_DIR}/OvrvisionPro CACHE INTERNAL "Path to store OvrvisionPro contents.")
-  SET (PLUS_OvrvisionPro_prefix_DIR ${CMAKE_BINARY_DIR}/OvrvisionPro-prefix CACHE INTERNAL "Path to store OvrvisionPro prefix data.")
-  SET (PLUS_OvrvisionPro_DIR ${CMAKE_BINARY_DIR}/OvrvisionPro-bin CACHE INTERNAL "Path to store OvrvisionPro binaries")
-
-  # Since OvrvisionPro SDK uses #pragma comment(lib...) commands, we need to pass in the directories containing the requested libraries directly...
-  #   ippicvmt.lib
-  IF( MSVC AND ${BUILD_ARCHITECTURE} MATCHES "x64" )
-    SET(OvrvisionPro_PRAGMA_HACK -DPragmaHack_DIR:PATH=${PLUS_OpenCV_src_DIR}/3rdparty/ippicv/unpack/ippicv_win/lib/intel64)
-  ELSEIF(MSVC)
-    SET(OvrvisionPro_PRAGMA_HACK -DPragmaHack_DIR:PATH=${PLUS_OpenCV_src_DIR}/3rdparty/ippicv/unpack/ippicv_win/lib/ia32)
-  ELSEIF(APPLE)
-    # Mac?
-  ELSE()
-    # Linux?
-  ENDIF()
-
-  SetGitRepositoryTag(
-    OvrvisionPro
-    "https://github.com/PLUSToolkit/OvrvisionProCMake.git"
-    "master"
-    )
-
-  ExternalProject_Add( OvrvisionPro
-    PREFIX ${PLUS_OvrvisionPro_prefix_DIR}
-    "${PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS}"
-    SOURCE_DIR "${PLUS_OvrvisionPro_src_DIR}"
-    BINARY_DIR "${PLUS_OvrvisionPro_DIR}"
-    #--Download step--------------
-    GIT_REPOSITORY ${OvrvisionPro_GIT_REPOSITORY}
-    GIT_TAG ${OvrvisionPro_GIT_TAG}
-    #--Configure step-------------
-    CMAKE_ARGS
-      ${ep_common_args}
-      ${OvrvisionPro_PRAGMA_HACK}
-      -DCMAKE_CXX_FLAGS:STRING=${ep_common_cxx_flags}
-      -DCMAKE_C_FLAGS:STRING=${ep_common_c_flags}
-      -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-      -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
+  plus_add_external_project(OvrvisionPro
+    GIT_REPOSITORY "https://github.com/PLUSToolkit/OvrvisionProCMake.git"
+    GIT_TAG master
+    DEPENDS ${_ovrvision_depends}
+    NO_BUILD_ALWAYS
+    CMAKE_CACHE_ARGS
       -DOpenCV_DIR:PATH=${PLUS_OpenCV_DIR}
-    #--Override install step-----------------
-    INSTALL_COMMAND "" # Do not install
-    #--Dependencies-----------------
-    DEPENDS ${OvrvisionPro_DEPENDENCIES}
+      ${_ovrvision_options}
     )
-ENDIF()
+endif()
