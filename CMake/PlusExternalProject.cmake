@@ -413,9 +413,19 @@ function(plus_add_external_project name)
     set(_step_args BUILD_ALWAYS 1)
   endif()
 
+  # ExternalProject writes these into an initial cache file as
+  #   set(NAME "VALUE" CACHE TYPE ...)
+  # and does not escape the value, so a Windows path is read back with its
+  # backslashes taken as escape sequences and rejected. Doubling them here
+  # makes the value survive that parse unchanged.
   set(_cmake_cache_args)
   if(_cache_args)
-    set(_cmake_cache_args CMAKE_CACHE_ARGS ${_cache_args})
+    set(_escaped_cache_args)
+    foreach(_arg IN LISTS _cache_args)
+      string(REPLACE "\\" "\\\\" _arg "${_arg}")
+      list(APPEND _escaped_cache_args "${_arg}")
+    endforeach()
+    set(_cmake_cache_args CMAKE_CACHE_ARGS ${_escaped_cache_args})
   endif()
   set(_cmake_args)
   if(_ep_CMAKE_ARGS)
