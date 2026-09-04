@@ -474,10 +474,10 @@ IF(BUILDNAME)
     )
 ENDIF(BUILDNAME)
 
-IF(NOT DEFINED(PLUSLIB_GIT_REPOSITORY))
+IF(NOT DEFINED PLUSLIB_GIT_REPOSITORY)
   SET(PLUSLIB_GIT_REPOSITORY "https://github.com/PlusToolkit/PlusLib.git" CACHE STRING "Set PlusLib desired git url")
 ENDIF()
-IF(NOT DEFINED(PLUSLIB_GIT_REVISION))
+IF(NOT DEFINED PLUSLIB_GIT_REVISION)
   SET(PLUSLIB_GIT_REVISION "master" CACHE STRING "Set PlusLib desired git hash (master means latest)")
 ENDIF()
 
@@ -585,7 +585,9 @@ ExternalProject_Add(PlusLib
     -DPLUS_USE_GENERIC_SENSOR_TRACKER:BOOL=${PLUS_USE_GENERIC_SENSOR_TRACKER}
     -DPLUS_USE_AZUREKINECT:BOOL=${PLUS_USE_AZUREKINECT}
     -DPLUS_USE_REVOPOINT3DCAMERA:BOOL=${PLUS_USE_REVOPOINT3DCAMERA}
-    -DVTK_SRC_DIR=${PLUS_VTK_SRC_DIR} // Currently required to access private vtkpng headers for BK ultrasound device
+    # VTK_SRC_DIR is required to reach the private vtkpng headers used by the
+    # BK ProFocus ultrasound device.
+    -DVTK_SRC_DIR:PATH=${PLUS_VTK_SRC_DIR}
     ${PLUSBUILD_ADDITIONAL_SDK_ARGS}
   LIST_SEPARATOR "|"
   #--Build step-----------------

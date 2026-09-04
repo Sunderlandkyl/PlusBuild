@@ -1,9 +1,9 @@
 #--------------------------------------------------------------------------
 # PlusLibData
-IF(NOT DEFINED(PLUSBUILD_PLUSLIBDATA_GIT_REPOSITORY))
+IF(NOT DEFINED PLUSBUILD_PLUSLIBDATA_GIT_REPOSITORY)
   SET(PLUSBUILD_PLUSLIBDATA_GIT_REPOSITORY "https://github.com/PlusToolkit/PlusLibData.git" CACHE STRING "Set PlusLibData desired git url.")
 ENDIF()
-IF(NOT DEFINED(PLUSBUILD_PLUSLIBDATA_GIT_REVISION))
+IF(NOT DEFINED PLUSBUILD_PLUSLIBDATA_GIT_REVISION)
   SET(PLUSBUILD_PLUSLIBDATA_GIT_REVISION "master" CACHE STRING "Set PlusLibData desired git hash (master means latest).")
 ENDIF()
 

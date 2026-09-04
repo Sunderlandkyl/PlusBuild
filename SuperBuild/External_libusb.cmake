@@ -14,7 +14,7 @@ IF (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   SET(LibUSB_INCLUDES     ${LibUSB_SRC}/include)
   SET(LIBUSB_INCLUDE_DIR  ${LibUSB_SRC}/include)
 
-  IF(MSVC OR ${CMAKE_GENERATOR} MATCHES "Xcode")
+  IF(MSVC OR "${CMAKE_GENERATOR}" MATCHES "Xcode")
     SET(LibUSB_LIBRARY_DIR  ${LibUSB_SRC}/MS32/dll)
   ELSE ()
     SET(LibUSB_LIBRARY_DIR  ${LibUSB_SRC}/MinGW32/dll)
@@ -38,14 +38,14 @@ IF (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 
 ELSE ()
 
-  IF (NOT EXISTS "/usr/include/LibUSB-1.0")
-    MESSAGE(FATAL_ERROR "LibUSB required but not found at /usr/include/LibUSB-1.0 Please install LibUSB.")
+  IF (NOT EXISTS "/usr/include/libusb-1.0")
+    MESSAGE(FATAL_ERROR "LibUSB required but not found at /usr/include/libusb-1.0 Please install LibUSB.")
   ENDIF ()
 
   # Copied from original repository https://github.com/maartenvds/libseek-thermal
-  SET(LibUSB_INCLUDE_DIRS /usr/include/LibUSB-1.0)
-  SET(LibUSB_INCLUDES     /usr/include/LibUSB-1.0)
-  SET(LIBUSB_INCLUDE_DIR  /usr/include/LibUSB-1.0)
+  SET(LibUSB_INCLUDE_DIRS /usr/include/libusb-1.0)
+  SET(LibUSB_INCLUDES     /usr/include/libusb-1.0)
+  SET(LIBUSB_INCLUDE_DIR  /usr/include/libusb-1.0)
   SET(LibUSB_LIBS    -lusb-1.0)
   SET(LIBUSB_LIBRARY -lusb-1.0)
 

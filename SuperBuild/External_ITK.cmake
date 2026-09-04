@@ -35,16 +35,14 @@ ELSE()
     LIST(APPEND PLUS_ITK_OPTIONAL_ARGS -DITK_USE_SYSTEM_PNG:BOOL=ON)
   ENDIF()
 
-  IF(UNIX AND NOT APPLE)
-
-    SET(itk_common_cxx_flags "${ep_common_cxx_flags} -std=c++${CMAKE_CXX_STANDARD}")
-  ELSEIF(MSVC)
-    SET(itk_common_cxx_flags "${itk_common_cxx_flags} /MP ")
+  SET(itk_common_cxx_flags "${ep_common_cxx_flags}")
+  IF(MSVC)
+    SET(itk_common_cxx_flags "${itk_common_cxx_flags} /MP")
   ENDIF()
 
   SET (PLUS_ITK_SRC_DIR "${CMAKE_BINARY_DIR}/itk")
   SET (PLUS_ITK_BIN_DIR "${CMAKE_BINARY_DIR}/itk-bin" CACHE INTERNAL "Path to store itk binaries")
-  SET (PLUS_ITK_INSTALL_DIR "${CMAKE_BINARY_DIR}/itk-int" CACHE INTERNAL "Path to install vtk")
+  SET (PLUS_ITK_INSTALL_DIR "${CMAKE_BINARY_DIR}/itk-int" CACHE INTERNAL "Path to install ITK")
   SET (PLUS_ITK_DIR ${PLUS_ITK_BIN_DIR})
 
   SET (ITK_INSTALL_COMMAND "")

@@ -101,7 +101,7 @@ IF(BASH_EXECUTABLE AND Git_FOUND)
   IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
     EXECUTE_PROCESS(COMMAND "${BASH_EXECUTABLE}" -c "cd ${CMAKE_SOURCE_DIR} && ${CMAKE_SOURCE_DIR}/Utilities/SetupForDevelopment.sh copyOnly"
       OUTPUT_VARIABLE _bashOutput
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
   ENDIF()
 ENDIF()
@@ -483,7 +483,7 @@ IF(PLUSBUILD_BUILD_PLUSAPP OR PLUSBUILD_BUILD_PLUSLIB_WIDGETS)
 
   SET(ep_qt_args -DQt5_DIR:PATH=${Qt5_DIR})
   FOREACH(component ${PLUSBUILD_QT_COMPONENTS})
-    LIST(APPEND ep_qt_args -DQt5${Component}_DIR:PATH=${Qt5${Component}_DIR})
+    LIST(APPEND ep_qt_args -DQt5${component}_DIR:PATH=${Qt5${component}_DIR})
   ENDFOREACH()
 ENDIF()
 
@@ -877,7 +877,7 @@ IF(PLUS_USE_CLARIUS_OEM)
     message(FATAL_ERROR "Clarius OEM device is only available on Windows. Please use Windows to compile PLUS, or set PLUS_USE_CLARIUS_OEM to OFF.")
   ENDIF()
 
-  INCLUDE(Superbuild/External_ClariusOEM.cmake)
+  INCLUDE(SuperBuild/External_ClariusOEM.cmake)
 ENDIF()
 
 IF(PLUS_USE_STEAMVR)
@@ -982,7 +982,8 @@ IF(PLUS_USE_INFRARED_SEEK_CAM)
 ENDIF()
 
 IF(PLUS_USE_LEAPMOTION)
-  LIST(APPEND PlusLib_DEPENDENCIES LeapSDK::LeapC)
+  # LeapSDK::LeapC is an imported target from FIND_PACKAGE, not an
+  # ExternalProject, so there is nothing here to depend on.
 ENDIF()
 
 IF(PLUS_USE_STEAMVR AND NOT OpenVR_DIR)
@@ -1036,21 +1037,21 @@ ELSEIF(APPLE)
   SET(COMPILER_NAME "clang${CMAKE_MATCH_1}")
 ELSEIF(MSVC)
   # Use generator to determine name
-  IF(${CMAKE_GENERATOR} MATCHES "Visual Studio 9")
+  IF("${CMAKE_GENERATOR}" MATCHES "Visual Studio 9")
     SET(COMPILER_NAME vs9)
-  ELSEIF(${CMAKE_GENERATOR} MATCHES "Visual Studio 10")
+  ELSEIF("${CMAKE_GENERATOR}" MATCHES "Visual Studio 10")
     SET(COMPILER_NAME vs10)
-  ELSEIF(${CMAKE_GENERATOR} MATCHES "Visual Studio 11")
+  ELSEIF("${CMAKE_GENERATOR}" MATCHES "Visual Studio 11")
     SET(COMPILER_NAME vs11)
-  ELSEIF(${CMAKE_GENERATOR} MATCHES "Visual Studio 12")
+  ELSEIF("${CMAKE_GENERATOR}" MATCHES "Visual Studio 12")
     SET(COMPILER_NAME vs12)
-  ELSEIF(${CMAKE_GENERATOR} MATCHES "Visual Studio 14")
+  ELSEIF("${CMAKE_GENERATOR}" MATCHES "Visual Studio 14")
     SET(COMPILER_NAME vs14)
-  ELSEIF(${CMAKE_GENERATOR} MATCHES "Visual Studio 15")
+  ELSEIF("${CMAKE_GENERATOR}" MATCHES "Visual Studio 15")
     SET(COMPILER_NAME vs15)
-  ELSEIF(${CMAKE_GENERATOR} MATCHES "Visual Studio 16")
+  ELSEIF("${CMAKE_GENERATOR}" MATCHES "Visual Studio 16")
     SET(COMPILER_NAME vs16)
-  ELSEIF(${CMAKE_GENERATOR} MATCHES "Visual Studio 17")
+  ELSEIF("${CMAKE_GENERATOR}" MATCHES "Visual Studio 17")
     SET(COMPILER_NAME vs17)
   ELSE()
     SET(COMPILER_NAME vs??)
@@ -1133,7 +1134,7 @@ ENDIF()
 #-----------------------------------------------------------------------------
 # Display errors for options that are not compatible with VS2010
 #-----------------------------------------------------------------------------
-IF(${CMAKE_GENERATOR} MATCHES "Visual Studio 10")
+IF("${CMAKE_GENERATOR}" MATCHES "Visual Studio 10")
   FOREACH(OPTION_NAME PLUSBUILD_USE_aruco PLUS_USE_USDIGITALENCODERS_TRACKER)
     IF (${OPTION_NAME})
       MESSAGE(FATAL_ERROR "Option ${OPTION_NAME} is not compatible with Visual Studio 2010. Disable ${OPTION_NAME} or use a more recent compiler.")

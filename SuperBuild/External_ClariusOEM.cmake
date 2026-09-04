@@ -32,7 +32,6 @@ ELSE()
     BUILD_COMMAND ""
     #--Install step---------------
     INSTALL_COMMAND ""
-    DEPENDS ClariusOEM
     )
 
 ENDIF()
