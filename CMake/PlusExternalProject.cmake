@@ -238,7 +238,9 @@ macro(plus_external_project_common_args)
     # only for x86_64 and so was missing on arm64 Linux and Apple silicon.
     -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
     -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
-    -DBUILD_TESTING:BOOL=OFF
+    # BUILD_TESTING is deliberately not set here: PlusLib wants it on and the
+    # dependencies want it off, and a single value that every project then has
+    # to override would only be confusing.
     # Keep installed binaries relocatable: look beside the executable and in
     # the sibling lib directory rather than at absolute build paths.
     # Quoted because the value is a list, and an unquoted expansion here would
