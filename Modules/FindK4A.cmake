@@ -30,10 +30,12 @@ ELSEIF(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   SET(K4A_ROOT_140 "C:/Program Files/Azure Kinect SDK v1.4.0")
   SET(K4A_ROOT "${K4A_ROOT_141}" CACHE STRING "Path to Azure Kinect SDK")
   SET(K4A_INSTALL_PATHS "${K4A_ROOT}" "${K4A_ROOT}/sdk" "${K4A_ROOT_140}" "${K4A_ROOT_140}/sdk")
-  IF(NOT "${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)")
-    SET(DESKTOP_ARCH x86)
-  ELSE()
+  # By pointer size, not by generator name: the "Win64" generator suffix was
+  # retired with Visual Studio 2019, so this always chose x86.
+  IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
     SET(DESKTOP_ARCH amd64)
+  ELSE()
+    SET(DESKTOP_ARCH x86)
   ENDIF()
   # Find linked-time libraries
   FIND_LIBRARY(K4A_LIBRARY k4a PATHS ${K4A_INSTALL_PATHS} PATH_SUFFIXES "windows-desktop/${DESKTOP_ARCH}/release/lib")
