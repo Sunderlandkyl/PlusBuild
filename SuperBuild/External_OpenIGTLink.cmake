@@ -1,54 +1,26 @@
-IF(OpenIGTLink_DIR)
+if(OpenIGTLink_DIR)
   # OpenIGTLink has been built already
-  FIND_PACKAGE(OpenIGTLink REQUIRED NO_MODULE)
-  IF(${OpenIGTLink_PROTOCOL_VERSION} LESS 3)
-    MESSAGE(FATAL_ERROR "PLUS requires a build of OpenIGTLink with v3 support enabled. Please point OpenIGTLink_DIR to an implementation with v3 support.")
-  ENDIF()
+  find_package(OpenIGTLink REQUIRED NO_MODULE)
+  if(OpenIGTLink_PROTOCOL_VERSION LESS 3)
+    message(FATAL_ERROR "Plus requires a build of OpenIGTLink with v3 support enabled. Please point OpenIGTLink_DIR at an implementation with v3 support.")
+  endif()
 
-  MESSAGE(STATUS "Using OpenIGTLink available at: ${OpenIGTLink_DIR}")
+  message(STATUS "Using OpenIGTLink available at: ${OpenIGTLink_DIR}")
+  plus_copy_libraries_to_runtime_dir("${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" ${OpenIGTLink_LIBRARIES})
 
-  # Copy libraries to CMAKE_RUNTIME_OUTPUT_DIRECTORY
-  PlusCopyLibrariesToDirectory(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${OpenIGTLink_LIBRARIES})
-
-  SET (PLUS_OpenIGTLink_DIR "${OpenIGTLink_DIR}" CACHE INTERNAL "Path to store OpenIGTLink binaries")
-ELSE()
-  # OpenIGTLink has not been built yet, so download and build it as an external project
-  SetGitRepositoryTag(
-    OpenIGTLink
-    "https://github.com/openigtlink/OpenIGTLink.git"
-    "master"
-    )
-
-  SET (PLUS_OpenIGTLink_SRC_DIR "${CMAKE_BINARY_DIR}/OpenIGTLink")
-  SET (PLUS_OpenIGTLink_DIR "${CMAKE_BINARY_DIR}/OpenIGTLink-bin" CACHE INTERNAL "Path to store OpenIGTLink binaries")
-  ExternalProject_Add( OpenIGTLink
-    "${PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS}"
-    PREFIX "${CMAKE_BINARY_DIR}/OpenIGTLink-prefix"
-    SOURCE_DIR "${PLUS_OpenIGTLink_SRC_DIR}"
-    BINARY_DIR "${PLUS_OpenIGTLink_DIR}"
-    #--Download step--------------
-    GIT_REPOSITORY ${OpenIGTLink_GIT_REPOSITORY}
-    GIT_TAG ${OpenIGTLink_GIT_TAG}
-    #--Configure step-------------
-    CMAKE_ARGS
-      ${ep_common_args}
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-      -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-      -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
-      -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
+  set(PLUS_OpenIGTLink_DIR "${OpenIGTLink_DIR}" CACHE INTERNAL "Path to use as OpenIGTLink_DIR")
+else()
+  plus_add_external_project(OpenIGTLink
+    GIT_REPOSITORY "https://github.com/openigtlink/OpenIGTLink.git"
+    GIT_TAG master
+    DEPENDS ${OpenIGTLink_DEPENDENCIES}
+    CMAKE_CACHE_ARGS
       -DBUILD_EXAMPLES:BOOL=OFF
       -DBUILD_TESTING:BOOL=OFF
       -DOpenIGTLink_SUPERBUILD:BOOL=OFF
       -DOpenIGTLink_PROTOCOL_VERSION_2:BOOL=OFF
       -DOpenIGTLink_PROTOCOL_VERSION_3:BOOL=ON
-      -DCMAKE_CXX_FLAGS:STRING=${ep_common_cxx_flags}
-      -DCMAKE_C_FLAGS:STRING=${ep_common_c_flags}
       -DOpenIGTLink_ENABLE_VIDEOSTREAMING:BOOL=${PLUS_ENABLE_VIDEOSTREAMING}
       -DOpenIGTLink_USE_VP9:BOOL=OFF
-    #--Build step-----------------
-    BUILD_ALWAYS 1
-    #--Install step-----------------
-    INSTALL_COMMAND ""
-    DEPENDS ${OpenIGTLink_DEPENDENCIES}
     )
-ENDIF()
+endif()

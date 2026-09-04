@@ -1,91 +1,66 @@
-IF(ITK_DIR)
+if(ITK_DIR)
   # ITK has been built already
-  FIND_PACKAGE(ITK 5.4 REQUIRED PATHS ${ITK_DIR} NO_DEFAULT_PATH)
+  find_package(ITK 5.4 REQUIRED PATHS "${ITK_DIR}" NO_DEFAULT_PATH)
 
-  MESSAGE(STATUS "Using ITK available at: ${ITK_DIR}")
+  message(STATUS "Using ITK available at: ${ITK_DIR}")
+  plus_copy_libraries_to_runtime_dir("${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" ${ITK_LIBRARIES})
 
-  # Copy libraries to CMAKE_RUNTIME_OUTPUT_DIRECTORY
-  PlusCopyLibrariesToDirectory(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${ITK_LIBRARIES})
+  set(PLUS_ITK_DIR "${ITK_DIR}" CACHE INTERNAL "Path to use as ITK_DIR")
+else()
+  set(PLUS_ITK_VERSION_MAJOR 5)
+  set(PLUS_ITK_VERSION_MINOR 4)
+  set(PLUS_ITK_VERSION_PATCH 4)
+  if(PLUS_ITK_VERSION EQUAL 4)
+    message(WARNING "ITK 4.12.0 is not recommended. Use it only to build Plus with support for devices that require Visual Studio 2013.")
+    set(PLUS_ITK_VERSION_MAJOR 4)
+    set(PLUS_ITK_VERSION_MINOR 12)
+    set(PLUS_ITK_VERSION_PATCH 0)
+  endif()
+  set(PLUS_ITK_VERSION_STRING "v${PLUS_ITK_VERSION_MAJOR}.${PLUS_ITK_VERSION_MINOR}.${PLUS_ITK_VERSION_PATCH}")
 
-  SET (PLUS_ITK_DIR ${ITK_DIR} CACHE INTERNAL "Path to store itk binaries")
-ELSE()
+  option(PLUS_ITK_USE_SYSTEM_PNG "Use system PNG library for ITK" OFF)
+  mark_as_advanced(PLUS_ITK_USE_SYSTEM_PNG)
 
-  SET (PLUS_ITK_VERSION_MAJOR 5)
-  SET (PLUS_ITK_VERSION_MINOR 4)
-  SET (PLUS_ITK_VERSION_PATCH 4)
-  SET (PLUS_ITK_VERSION_STRING "v${PLUS_ITK_VERSION_MAJOR}.${PLUS_ITK_VERSION_MINOR}.${PLUS_ITK_VERSION_PATCH}")
-  IF (PLUS_ITK_VERSION EQUAL 4)
-    MESSAGE(WARNING "ITK 4.12.0 is not recommended! It should only be used to build Plus with support for devices which require Visual Studio 2013!")
-    SET (PLUS_ITK_VERSION_MAJOR 4)
-    SET (PLUS_ITK_VERSION_MINOR 12)
-    SET (PLUS_ITK_VERSION_PATCH 0)
-    SET (PLUS_ITK_VERSION_STRING "v${PLUS_ITK_VERSION_MAJOR}.${PLUS_ITK_VERSION_MINOR}.${PLUS_ITK_VERSION_PATCH}")
-  ENDIF()
-  # ITK has not been built yet, so download and build it as an external project
-  SetGitRepositoryTag(
-    itk
-    "https://github.com/InsightSoftwareConsortium/ITK"
-    ${PLUS_ITK_VERSION_STRING}
-    )
+  set(_itk_options)
+  if(PLUS_ITK_USE_SYSTEM_PNG)
+    list(APPEND _itk_options -DITK_USE_SYSTEM_PNG:BOOL=ON)
+  endif()
 
-  OPTION(PLUS_ITK_USE_SYSTEM_PNG "Use system PNG library for ITK" OFF)
-  MARK_AS_ADVANCED(PLUS_ITK_USE_SYSTEM_PNG)
+  set(_itk_cxx_flags)
+  if(MSVC)
+    set(_itk_cxx_flags "/MP")
+  endif()
 
-  IF(PLUS_ITK_USE_SYSTEM_PNG)
-    LIST(APPEND PLUS_ITK_OPTIONAL_ARGS -DITK_USE_SYSTEM_PNG:BOOL=ON)
-  ENDIF()
+  set(_itk_install)
+  if(PLUSBUILD_INSTALL_ITK)
+    set(_itk_install
+      INSTALL_DIR "${CMAKE_BINARY_DIR}/itk-int"
+      CONFIG_SUBDIR "lib/cmake/ITK-${PLUS_ITK_VERSION_MAJOR}.${PLUS_ITK_VERSION_MINOR}")
+  endif()
 
-  SET(itk_common_cxx_flags "${ep_common_cxx_flags}")
-  IF(MSVC)
-    SET(itk_common_cxx_flags "${itk_common_cxx_flags} /MP")
-  ENDIF()
-
-  SET (PLUS_ITK_SRC_DIR "${CMAKE_BINARY_DIR}/itk")
-  SET (PLUS_ITK_BIN_DIR "${CMAKE_BINARY_DIR}/itk-bin" CACHE INTERNAL "Path to store itk binaries")
-  SET (PLUS_ITK_INSTALL_DIR "${CMAKE_BINARY_DIR}/itk-int" CACHE INTERNAL "Path to install ITK")
-  SET (PLUS_ITK_DIR ${PLUS_ITK_BIN_DIR})
-
-  SET (ITK_INSTALL_COMMAND "")
-  IF (PLUSBUILD_INSTALL_ITK)
-    SET (PLUS_ITK_DIR "${PLUS_ITK_INSTALL_DIR}/lib/cmake/ITK-${PLUS_ITK_VERSION_MAJOR}.${PLUS_ITK_VERSION_MINOR}" CACHE INTERNAL "Path to installed itk binaries")
-  ELSE()
-    SET (ITK_INSTALL_COMMAND
-      INSTALL_COMMAND ""
-      )
-  ENDIF()
-
-  ExternalProject_Add( itk
-    "${PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS}"
-    PREFIX "${CMAKE_BINARY_DIR}/itk-prefix"
-    SOURCE_DIR "${PLUS_ITK_SRC_DIR}"
-    BINARY_DIR "${PLUS_ITK_BIN_DIR}"
-    INSTALL_DIR "${PLUS_ITK_INSTALL_DIR}"
-    #--Download step--------------
-    GIT_REPOSITORY ${itk_GIT_REPOSITORY}
-    GIT_TAG ${itk_GIT_TAG}
-    #--Configure step-------------
-    CMAKE_ARGS
-      ${ep_common_args}
-      ${PLUS_ITK_OPTIONAL_ARGS}
-      -DCMAKE_INSTALL_PREFIX:PATH=${PLUS_ITK_INSTALL_DIR}
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-      -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-      -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
-      -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
+  plus_add_external_project(itk
+    GIT_REPOSITORY "https://github.com/InsightSoftwareConsortium/ITK"
+    GIT_TAG "${PLUS_ITK_VERSION_STRING}"
+    DEPENDS ${ITK_DEPENDENCIES}
+    CXX_FLAGS "${_itk_cxx_flags}"
+    ${_itk_install}
+    CMAKE_CACHE_ARGS
       -DBUILD_TESTING:BOOL=OFF
       -DBUILD_EXAMPLES:BOOL=OFF
       -DITK_LEGACY_REMOVE:BOOL=OFF
       -DKWSYS_USE_MD5:BOOL=ON
       -DITK_USE_REVIEW:BOOL=ON
-      -DITK_CXX_OPTIMIZATION_FLAGS:STRING= # Force compiler-default instruction set to ensure compatibility with older CPUs
-      -DITK_C_OPTIMIZATION_FLAGS:STRING=  # Force compiler-default instruction set to ensure compatibility with older CPUs
-      -DCMAKE_CXX_FLAGS:STRING=${itk_common_cxx_flags}
-      -DCMAKE_C_FLAGS:STRING=${ep_common_c_flags}
+      # Leave the instruction set at the compiler default so that the result
+      # still runs on older CPUs.
+      -DITK_CXX_OPTIMIZATION_FLAGS:STRING=
+      -DITK_C_OPTIMIZATION_FLAGS:STRING=
       -DCMAKE_DEBUG_POSTFIX:STRING=D
-    #--Build step-----------------
-    BUILD_ALWAYS 1
-    DEPENDS ${ITK_DEPENDENCIES}
-    #--Install step-----------------
-    "${ITK_INSTALL_COMMAND}"
+      ${_itk_options}
     )
-ENDIF()
+
+  # ITK is spelled in upper case everywhere else in the superbuild.
+  set(PLUS_ITK_SRC_DIR "${PLUS_itk_SRC_DIR}" CACHE INTERNAL "Path to ITK sources")
+  set(PLUS_ITK_BIN_DIR "${PLUS_itk_BIN_DIR}" CACHE INTERNAL "Path to ITK binaries")
+  set(PLUS_ITK_INSTALL_DIR "${CMAKE_BINARY_DIR}/itk-int" CACHE INTERNAL "Path ITK is installed to")
+  set(PLUS_ITK_DIR "${PLUS_itk_DIR}" CACHE INTERNAL "Path to use as ITK_DIR")
+endif()

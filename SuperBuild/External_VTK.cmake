@@ -1,154 +1,118 @@
-IF(VTK_DIR)
+if(VTK_DIR)
   # VTK has been built already
-  FIND_PACKAGE(VTK REQUIRED)
+  find_package(VTK REQUIRED)
 
-  IF(NOT ${VTK_VERSION_MAJOR} GREATER 7)
-    MESSAGE(FATAL_ERROR "VTK8+ required for Plus. Found VTK ${VTK_VERSION_MAJOR}.${VTK_VERSION_MINOR}.${VTK_VERSION_PATH}.")
-    SET(VTK_DIR VTK-DIR_NOTFOUND FORCE)
-  ENDIF()
+  if(VTK_VERSION_MAJOR LESS 8)
+    message(FATAL_ERROR "VTK 8 or newer is required for Plus. Found VTK ${VTK_VERSION}.")
+  endif()
 
-  MESSAGE(STATUS "Using VTK available at: ${VTK_DIR}")
+  message(STATUS "Using VTK available at: ${VTK_DIR}")
+  plus_copy_libraries_to_runtime_dir("${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" ${VTK_LIBRARIES})
 
-  # Copy libraries to CMAKE_RUNTIME_OUTPUT_DIRECTORY
-  PlusCopyLibrariesToDirectory(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${VTK_LIBRARIES})
+  set(PLUS_VTK_DIR "${VTK_DIR}" CACHE INTERNAL "Path to use as VTK_DIR")
 
-  SET(PLUS_VTK_DIR "${VTK_DIR}" CACHE INTERNAL "Path to store vtk binaries")
+  if(PLUSBUILD_BUILD_PLUSAPP OR PLUSBUILD_BUILD_PLUSLIB_WIDGETS)
+    if(NOT TARGET vtkGUISupportQt AND NOT TARGET VTK::GUISupportQt)
+      message(SEND_ERROR "VTK has to be built with Qt support enabled in order to build PlusApp.")
+    endif()
+  endif()
 
-  IF((PLUSBUILD_BUILD_PLUSAPP OR PLUSBUILD_BUILD_PLUSLIB_WIDGETS))
-    IF(NOT TARGET vtkGUISupportQt AND NOT TARGET VTK::GUISupportQt)
-      MESSAGE(SEND_ERROR "You have to build VTK with VTK_USE_QT flag ON if you need to use PLUSBUILD_BUILD_PLUSAPP.")
-    ENDIF()
-  ENDIF()
+  set(PLUSBUILD_VTK_VERSION ${VTK_VERSION})
+  set(PLUSBUILD_VTK_VERSION_MAJOR ${VTK_VERSION_MAJOR})
+  set(PLUSBUILD_VTK_VERSION_MINOR ${VTK_VERSION_MINOR})
+  set(PLUSBUILD_VTK_VERSION_PATCH ${VTK_VERSION_PATCH})
+else()
+  set(PLUSBUILD_EXTERNAL_VTK_VERSION "v9.1.0" CACHE STRING "User-selected VTK version to build Plus against")
+  set_property(CACHE PLUSBUILD_EXTERNAL_VTK_VERSION PROPERTY STRINGS "v8.2.0" "v9.0.3" "v9.1.0" "v9.2.5")
 
-  # No target necessary, VTK is provided
-  SET(VTK_BUILD_DEPENDENCY_TARGET CACHE INTERNAL "The name of the target to list as a dependency to ensure build order correctness.")
+  if(PLUSBUILD_EXTERNAL_VTK_VERSION STREQUAL "")
+    set(PLUSBUILD_EXTERNAL_VTK_VERSION "v9.1.0" CACHE STRING "User-selected VTK version to build Plus against" FORCE)
+  endif()
 
-  SET(PLUSBUILD_VTK_VERSION ${VTK_VERSION})
-  SET(PLUSBUILD_VTK_VERSION_MAJOR ${VTK_VERSION_MAJOR})
-  SET(PLUSBUILD_VTK_VERSION_MINOR ${VTK_VERSION_MINOR})
-  SET(PLUSBUILD_VTK_VERSION_PATCH ${VTK_VERSION_PATCH})
-ELSE()
-  # VTK has not been built yet, so download and build it as an external project
-  IF(Qt5_FOUND)
-    LIST(APPEND VTK_VERSION_SPECIFIC_ARGS -DVTK_Group_Qt:BOOL=ON)
-    LIST(APPEND VTK_QT_ARGS -DVTK_QT_VERSION:STRING=${QT_VERSION_MAJOR})
-  ENDIF()
+  string(FIND "${PLUSBUILD_EXTERNAL_VTK_VERSION}" "." _is_tag)
+  if(_is_tag EQUAL -1)
+    # A commit hash rather than a version tag, so the version is unknown.
+    set(PLUSBUILD_VTK_VERSION ${PLUSBUILD_EXTERNAL_VTK_VERSION} CACHE INTERNAL "Internal CMake version for VTK.")
+  else()
+    string(REPLACE "v" "" _version_string "${PLUSBUILD_EXTERNAL_VTK_VERSION}")
+    string(REPLACE "." ";" _version_list "${_version_string}")
+    list(GET _version_list 0 PLUSBUILD_VTK_VERSION_MAJOR)
+    list(GET _version_list 1 PLUSBUILD_VTK_VERSION_MINOR)
+    list(GET _version_list 2 PLUSBUILD_VTK_VERSION_PATCH)
+    set(PLUSBUILD_VTK_VERSION
+      "${PLUSBUILD_VTK_VERSION_MAJOR}.${PLUSBUILD_VTK_VERSION_MINOR}.${PLUSBUILD_VTK_VERSION_PATCH}"
+      CACHE INTERNAL "Internal CMake version for VTK.")
+  endif()
 
-  IF(APPLE)
-    LIST(APPEND VTK_QT_ARGS
+  set(_vtk_options -DVTK_Group_Rendering:BOOL=ON)
+  if(PLUSBUILD_VTK_RENDERING_BACKEND STREQUAL "None")
+    set(_vtk_options -DVTK_Group_Rendering:BOOL=OFF)
+  endif()
+
+  if(Qt5_FOUND)
+    if(PLUSBUILD_VTK_VERSION VERSION_LESS 9.0.0)
+      if(Qt5_VERSION VERSION_GREATER_EQUAL 5.15.0)
+        message(SEND_ERROR "Qt 5.15 and newer require VTK 9.0.0 or newer.")
+      endif()
+      list(APPEND _vtk_options -DVTK_Group_Qt:BOOL=ON -DVTK_QT_VERSION:STRING=5)
+    else()
+      list(APPEND _vtk_options -DVTK_GROUP_ENABLE_Qt:STRING=YES)
+    endif()
+  endif()
+
+  if(APPLE)
+    # VTK's own CMakeLists enables Carbon and disables Cocoa if it has to.
+    list(APPEND _vtk_options
       -DVTK_USE_CARBON:BOOL=OFF
-      -DVTK_USE_COCOA:BOOL=ON # Default to Cocoa, VTK/CMakeLists.txt will enable Carbon and disable cocoa if needed
+      -DVTK_USE_COCOA:BOOL=ON
       -DVTK_USE_X:BOOL=OFF
       )
-  ENDIF()
+  endif()
 
-  IF(PLUSBUILD_USE_Tesseract)
-    LIST(APPEND VTK_VERSION_SPECIFIC_ARGS -DModule_vtkzlib:INTERNAL=ON)
-  ENDIF()
+  if(PLUSBUILD_USE_Tesseract)
+    list(APPEND _vtk_options -DModule_vtkzlib:INTERNAL=ON)
+  endif()
 
-  IF(MSVC)
-    LIST(APPEND VTK_VERSION_SPECIFIC_ARGS -DCMAKE_CXX_MP_FLAG:BOOL=ON)
-  ENDIF()
+  if(MSVC)
+    list(APPEND _vtk_options -DCMAKE_CXX_MP_FLAG:BOOL=ON)
+  endif()
 
-  SET(PLUSBUILD_EXTERNAL_VTK_VERSION "v9.1.0" CACHE STRING "User-selected VTK version to build Plus against")
-  SET(_vtk_versions "v8.2.0" "v9.0.3" "v9.1.0" "v9.2.5")
-  set_property( CACHE PLUSBUILD_EXTERNAL_VTK_VERSION PROPERTY STRINGS "" ${_vtk_versions} )
+  # VTK 9 ignores incoming output directories, so there is no point in setting
+  # them. The condition here used to test VTK_VERSION, which is empty in this
+  # branch, so they were passed for every version.
+  set(_vtk_output_dirs)
+  if(PLUSBUILD_VTK_VERSION VERSION_GREATER_EQUAL 9.0.0)
+    set(_vtk_output_dirs NO_OUTPUT_DIRS)
+  endif()
 
-  IF(PLUSBUILD_EXTERNAL_VTK_VERSION STREQUAL "")
-    SET(PLUSBUILD_EXTERNAL_VTK_VERSION "v9.1.0" CACHE STRING "User-selected VTK version to build Plus against" FORCE)
-    SET(PLUSBUILD_VTK_VERSION 9.1.0 CACHE INTERNAL "Internal CMake version for VTK.")
-  ELSE()
-    STRING(FIND ${PLUSBUILD_EXTERNAL_VTK_VERSION} "." _is_tag)
-    IF(_is_tag EQUAL -1)
-      # not a tag, is a hash
-      SET(PLUSBUILD_VTK_VERSION ${PLUSBUILD_EXTERNAL_VTK_VERSION})
-    ELSE()
-      STRING(REPLACE "v" "" _version_string ${PLUSBUILD_EXTERNAL_VTK_VERSION})
-      STRING(REPLACE "." ";" _version_list ${_version_string})
-      LIST(GET _version_list 0 _version_major)
-      LIST(GET _version_list 1 _version_minor)
-      LIST(GET _version_list 2 _version_patch)
-      # List based variable is used elsewhere
-      SET(PLUSBUILD_VTK_VERSION ${_version_major}.${_version_minor}.${_version_patch} CACHE INTERNAL "Internal CMake version for VTK.")
-      SET(PLUSBUILD_VTK_VERSION_MAJOR ${_version_major})
-      SET(PLUSBUILD_VTK_VERSION_MINOR ${_version_minor})
-      SET(PLUSBUILD_VTK_VERSION_PATCH ${_version_patch})
-    ENDIF()
-  ENDIF()
+  set(_vtk_install)
+  if(PLUSBUILD_INSTALL_VTK)
+    set(_vtk_install
+      INSTALL_DIR "${CMAKE_BINARY_DIR}/vtk-int"
+      CONFIG_SUBDIR "lib/cmake/vtk-${PLUSBUILD_VTK_VERSION_MAJOR}.${PLUSBUILD_VTK_VERSION_MINOR}")
+  endif()
 
-  SetGitRepositoryTag(
-    VTK
-    "https://github.com/kitware/vtk.git"
-    ${PLUSBUILD_EXTERNAL_VTK_VERSION}
-    )
-
-  SET (PLUS_VTK_SRC_DIR "${CMAKE_BINARY_DIR}/vtk")
-  SET (PLUS_VTK_BIN_DIR "${CMAKE_BINARY_DIR}/vtk-bin" CACHE INTERNAL "Path to store vtk binaries")
-  SET (PLUS_VTK_INSTALL_DIR "${CMAKE_BINARY_DIR}/vtk-int" CACHE INTERNAL "Path to install vtk")
-  SET (PLUS_VTK_DIR ${PLUS_VTK_BIN_DIR})
-
-  SET (VTK_INSTALL_COMMAND "")
-  IF (PLUSBUILD_INSTALL_VTK)
-    SET (PLUS_VTK_DIR "${PLUS_VTK_INSTALL_DIR}/lib/cmake/vtk-${PLUSBUILD_VTK_VERSION_MAJOR}.${PLUSBUILD_VTK_VERSION_MINOR}")
-  ELSE()
-    SET (VTK_INSTALL_COMMAND
-      INSTALL_COMMAND ""
-      )
-  ENDIF()
-
-  SET (PLUS_VTK_OPTIONS -DVTK_Group_Rendering:BOOL=ON)
-  IF(PLUSBUILD_VTK_RENDERING_BACKEND STREQUAL None)
-    SET(PLUS_VTK_OPTIONS -DVTK_Group_Rendering:BOOL=OFF)
-  ENDIF()
-
-  IF(Qt5_FOUND)
-    IF(PLUSBUILD_VTK_VERSION VERSION_LESS 9.0.0 AND Qt5_VERSION VERSION_GREATER_EQUAL 5.15.0)
-      MESSAGE(SEND_ERROR "Qt 5.15.+ requires VTK 9.0.0 or newer.")
-    ENDIF()
-    IF(PLUSBUILD_VTK_VERSION VERSION_GREATER_EQUAL 9.0.0)
-      LIST(APPEND PLUS_VTK_OPTIONS -DVTK_GROUP_ENABLE_Qt:STRING=YES)
-    ENDIF()
-  ENDIF()
-
-  IF(VTK_VERSION VERSION_GREATER_EQUAL 9.0.0)
-    # VTK 9+ no longer respects incoming output directories, so don't set them
-  ELSE()
-    LIST(APPEND PLUS_VTK_OPTIONS -DCMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-      -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-      -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH=${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
-      )
-  ENDIF()
-
-  ExternalProject_Add( vtk
-    "${PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS}"
-    PREFIX "${CMAKE_BINARY_DIR}/vtk-prefix"
-    SOURCE_DIR "${PLUS_VTK_SRC_DIR}"
-    BINARY_DIR "${PLUS_VTK_BIN_DIR}"
-    INSTALL_DIR ${PLUS_VTK_INSTALL_DIR}
-    #--Download step--------------
-    GIT_REPOSITORY ${VTK_GIT_REPOSITORY}
-    GIT_TAG ${VTK_GIT_TAG}
-    #--Configure step-------------
-    CMAKE_ARGS
-      ${ep_common_args}
+  plus_add_external_project(vtk
+    GIT_REPOSITORY "https://github.com/kitware/vtk.git"
+    GIT_TAG "${PLUSBUILD_EXTERNAL_VTK_VERSION}"
+    SOURCE_DIR "${CMAKE_BINARY_DIR}/vtk"
+    DEPENDS ${VTK_DEPENDENCIES}
+    ${_vtk_output_dirs}
+    ${_vtk_install}
+    CMAKE_CACHE_ARGS
       ${ep_qt_args}
-      ${VTK_VERSION_SPECIFIC_ARGS}
-      -DCMAKE_INSTALL_PREFIX:PATH=${PLUS_VTK_INSTALL_DIR}
-      -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
       -DBUILD_TESTING:BOOL=OFF
       -DBUILD_EXAMPLES:BOOL=OFF
-      -DCMAKE_CXX_FLAGS:STRING=${ep_common_cxx_flags}
-      -DCMAKE_C_FLAGS:STRING=${ep_common_c_flags}
-      -DVTK_SMP_IMPLEMENTATION_TYPE:STRING="OpenMP"
       -DVTK_WRAP_PYTHON:BOOL=OFF
+      -DVTK_SMP_IMPLEMENTATION_TYPE:STRING=OpenMP
       -DVTK_RENDERING_BACKEND:STRING=${PLUSBUILD_VTK_RENDERING_BACKEND}
       -DCMAKE_DEBUG_POSTFIX:STRING=D
-      ${PLUS_VTK_OPTIONS}
-    #--Build step-----------------
-    BUILD_ALWAYS 1
-    DEPENDS ${VTK_DEPENDENCIES}
-    "${VTK_INSTALL_COMMAND}"
+      ${_vtk_options}
     )
 
-  SET(VTK_BUILD_DEPENDENCY_TARGET vtk CACHE INTERNAL "The name of the target to list as a dependency to ensure build order correctness.")
-ENDIF()
+  # VTK is spelled in upper case everywhere else in the superbuild.
+  set(PLUS_VTK_SRC_DIR "${PLUS_vtk_SRC_DIR}" CACHE INTERNAL "Path to VTK sources")
+  set(PLUS_VTK_BIN_DIR "${PLUS_vtk_BIN_DIR}" CACHE INTERNAL "Path to VTK binaries")
+  set(PLUS_VTK_INSTALL_DIR "${CMAKE_BINARY_DIR}/vtk-int" CACHE INTERNAL "Path VTK is installed to")
+  set(PLUS_VTK_DIR "${PLUS_vtk_DIR}" CACHE INTERNAL "Path to use as VTK_DIR")
+endif()
