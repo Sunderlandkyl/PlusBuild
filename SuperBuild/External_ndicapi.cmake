@@ -8,5 +8,7 @@ else()
   plus_add_external_project(ndicapi
     GIT_REPOSITORY "https://github.com/PlusToolkit/ndicapi.git"
     GIT_TAG master
+    CMAKE_CACHE_ARGS
+      -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
     )
 endif()

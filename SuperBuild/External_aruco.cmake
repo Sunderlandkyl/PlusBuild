@@ -21,6 +21,7 @@ else()
       -DOpenCV_INSTALL_BINARIES_PREFIX:STRING= # Install into the prefix directly, not under arch/compiler
       -DUSE_OWN_EIGEN3:BOOL=OFF
       -DBUILD_TESTS:BOOL=OFF
+      -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
       -DBUILD_PERF_TESTS:BOOL=OFF
     )
 endif()

@@ -237,10 +237,10 @@ macro(plus_external_project_common_args)
     # Applies to every architecture, unlike the -fPIC that used to be added
     # only for x86_64 and so was missing on arm64 Linux and Apple silicon.
     -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
-    -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
-    # BUILD_TESTING is deliberately not set here: PlusLib wants it on and the
-    # dependencies want it off, and a single value that every project then has
-    # to override would only be confusing.
+    # BUILD_SHARED_LIBS and BUILD_TESTING are deliberately not set here.
+    # Not every dependency wants the same answer: tesseract and leptonica are
+    # built static on purpose, and PlusLib wants testing on while its
+    # dependencies want it off. Each project says what it needs.
     # Keep installed binaries relocatable: look beside the executable and in
     # the sibling lib directory rather than at absolute build paths.
     # Quoted because the value is a list, and an unquoted expansion here would

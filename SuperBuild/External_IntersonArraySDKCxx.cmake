@@ -29,6 +29,7 @@ else()
     DEPENDS ${IntersonArraySDKCxx_DEPENDENCIES}
     CMAKE_CACHE_ARGS
       -DBUILD_TESTING:BOOL=OFF
+      -DBUILD_SHARED_LIBS:BOOL=${PLUSBUILD_BUILD_SHARED_LIBS}
       -DIntersonArraySDK_DIR:PATH=${IntersonArraySDK_DIR}
     )
 endif()
