@@ -1,3 +1,13 @@
+# Record the repository and tag an external project should be fetched from.
+# plus_add_external_project() takes GIT_REPOSITORY/GIT_TAG directly and
+# reports the same thing itself; this remains for External_*.cmake files
+# outside this repository that still call it.
+MACRO(SetGitRepositoryTag project_name git_repository git_tag)
+  SET(${project_name}_GIT_REPOSITORY ${git_repository})
+  SET(${project_name}_GIT_TAG ${git_tag})
+  MESSAGE(STATUS "${project_name} repository: ${git_repository} (${git_tag})")
+ENDMACRO()
+
 MACRO(PlusCopyLibrariesToDirectory _destination)
   FOREACH(lib ${ARGN})
     IF(NOT TARGET ${lib})

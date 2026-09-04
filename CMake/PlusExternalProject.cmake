@@ -241,8 +241,10 @@ macro(plus_external_project_common_args)
     -DBUILD_TESTING:BOOL=OFF
     # Keep installed binaries relocatable: look beside the executable and in
     # the sibling lib directory rather than at absolute build paths.
+    # Quoted because the value is a list, and an unquoted expansion here would
+    # turn each entry after the first into a separate argument.
     -DCMAKE_MACOSX_RPATH:BOOL=ON
-    -DCMAKE_INSTALL_RPATH:STRING=${PLUSBUILD_INSTALL_RPATH}
+    "-DCMAKE_INSTALL_RPATH:STRING=${PLUSBUILD_INSTALL_RPATH}"
     -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=OFF
     -DCMAKE_INSTALL_RPATH_USE_LINK_PATH:BOOL=OFF
     )
@@ -256,18 +258,18 @@ macro(plus_external_project_common_args)
 
   if(APPLE)
     list(APPEND PLUSBUILD_EP_CACHE_ARGS
-      -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES}
-      -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
-      -DCMAKE_OSX_SYSROOT:PATH=${CMAKE_OSX_SYSROOT}
+      "-DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES}"
+      "-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}"
+      "-DCMAKE_OSX_SYSROOT:PATH=${CMAKE_OSX_SYSROOT}"
       )
   endif()
 
   if(PLUSBUILD_MULTI_CONFIG)
     list(APPEND PLUSBUILD_EP_CACHE_ARGS
-      -DCMAKE_CONFIGURATION_TYPES:STRING=${CMAKE_CONFIGURATION_TYPES})
+      "-DCMAKE_CONFIGURATION_TYPES:STRING=${CMAKE_CONFIGURATION_TYPES}")
   else()
     list(APPEND PLUSBUILD_EP_CACHE_ARGS
-      -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE})
+      "-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}")
   endif()
 
   set(PLUSBUILD_EP_OUTPUT_DIR_ARGS
@@ -282,10 +284,23 @@ macro(plus_external_project_common_args)
     set(PLUSBUILD_EP_DOWNLOAD_ARGS)
   endif()
 
+  # The legacy spelling is spliced into ExternalProject_Add quoted, so it can
+  # never be empty: an empty argument is silently taken as another value for
+  # the preceding keyword, which corrupts PREFIX and makes two steps claim the
+  # same output. TIMEOUT is a harmless stand-in, since an online build does not
+  # reach the download timeout.
+  if(PLUSBUILD_OFFLINE_BUILD)
+    set(PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS DOWNLOAD_COMMAND "" UPDATE_COMMAND "")
+  else()
+    set(PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS TIMEOUT 1000)
+  endif()
+
   # Retained under their historical names: a user's own External_*.cmake may
-  # still reference them.
+  # still reference them. These go to ExternalProject_Add as CMAKE_ARGS rather
+  # than CMAKE_CACHE_ARGS, where a value containing a semicolon would be split
+  # into separate arguments, so drop those entries from the legacy list.
   set(ep_common_args ${PLUSBUILD_EP_CACHE_ARGS})
-  set(PLUSBUILD_EXTERNAL_PROJECT_CUSTOM_COMMANDS ${PLUSBUILD_EP_DOWNLOAD_ARGS})
+  list(FILTER ep_common_args EXCLUDE REGEX ";")
 endmacro()
 
 #-----------------------------------------------------------------------------
