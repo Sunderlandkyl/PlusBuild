@@ -51,15 +51,20 @@ if(tesseract_DIR)
   find_package(tesseract REQUIRED NO_MODULE)
   set(PLUS_tesseract_DIR "${tesseract_DIR}" CACHE INTERNAL "Path to use as tesseract_DIR")
 else()
+  # Unlike the other external projects, tesseract has to be installed: PlusLib
+  # includes <tesseract/baseapi.h>, which only exists in the install tree. It
+  # installs into its own build directory, which is what tesseract_DIR then
+  # points at.
   plus_add_external_project(tesseract
     GIT_REPOSITORY "https://github.com/PlusToolkit/tesseract-ocr-cmake.git"
     GIT_TAG master
     DEPENDS ${_tesseract_depends}
+    BINARY_DIR "${CMAKE_BINARY_DIR}/tesseract-bin"
+    INSTALL_DIR "${CMAKE_BINARY_DIR}/tesseract-bin"
     CMAKE_CACHE_ARGS
       # tesseract declares a minimum CMake version that CMake 4 no longer accepts.
       -DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5
       -DCMAKE_PREFIX_PATH:STRING=${CMAKE_PREFIX_PATH}
-      -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/tesseract-bin
       -DLeptonica_DIR:PATH=${PLUS_leptonica_DIR}
       -Dtesseract_DATA_DIR:PATH=${PLUS_tessdata_src_DIR}
     )
