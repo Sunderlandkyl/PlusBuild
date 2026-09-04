@@ -37,7 +37,7 @@ endif()
 
 # todo fails for universal builds
 set(_dll_suffix)
-if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+if("${CMAKE_SIZEOF_VOID_P}" EQUAL 8)
   set(_bitness 64)
   if(WIN32)
     set(_dll_suffix _x64)
@@ -49,16 +49,16 @@ endif()
 # Test platform
 
 set(_platform)
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
   set(_platform_base osx)
   # SteamVR only supports 32-bit on OS X
   set(OPENVR_PLATFORM osx32)
 else()
-  if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+  if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(_platform_base linux)
     # TODO Massive hack!
     add_definitions(-DGNUC -DPOSIX -DCOMPILER_GCC -D_LINUX -DLINUX -DPOSIX -D_POSIX)
-  elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  elseif("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
     set(_platform_base win)
   endif()
   set(OPENVR_PLATFORM ${_platform_base}${_bitness})

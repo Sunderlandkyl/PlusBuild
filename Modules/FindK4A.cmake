@@ -7,7 +7,7 @@
 # K4A_LIBRARY - Azure Kinect SDK k4a library
 #
 
-IF(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+IF("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   # For now, the recommended installation on Linux debian distro is through
   # debian packages thus cmake should find the SDK in the system paths.
   FIND_PACKAGE(k4a 1.4.0 REQUIRED)
@@ -25,7 +25,7 @@ IF(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
       GET_TARGET_PROPERTY(K4A_INCLUDE_DIR k4a::k4a INTERFACE_INCLUDE_DIRECTORIES)
     ENDIF()
   ENDIF()
-ELSEIF(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+ELSEIF("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   SET(K4A_ROOT_141 "C:/Program Files/Azure Kinect SDK v1.4.1")
   SET(K4A_ROOT_140 "C:/Program Files/Azure Kinect SDK v1.4.0")
   SET(K4A_ROOT "${K4A_ROOT_141}" CACHE STRING "Path to Azure Kinect SDK")
