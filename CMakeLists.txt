@@ -442,16 +442,19 @@ if(PLUS_USE_OPTITRACK)
 endif()
 
 if(PLUSBUILD_BUILD_PLUSAPP OR PLUSBUILD_BUILD_PLUSLIB_WIDGETS)
-  # Qt 6 where it is available, Qt 5 otherwise. A Qt5_DIR given without a
-  # Qt6_DIR is taken as the choice of Qt 5, so that pointing at a Qt 5 is not
-  # overridden by a Qt 6 that happens to be installed in a system location.
-  if(Qt5_DIR AND NOT Qt6_DIR)
-    find_package(QT NAMES Qt5 COMPONENTS Core QUIET)
+  # The Qt whose directory was given, Qt 6 over Qt 5 when both were; failing
+  # that, whichever of the two the search finds, Qt 6 first. Qt6_DIR and
+  # Qt5_DIR are read here explicitly because find_package(QT NAMES ...)
+  # consults neither, only QT_DIR and the prefix paths.
+  if(Qt6_DIR)
+    set(QT_VERSION_MAJOR 6)
+  elseif(Qt5_DIR)
+    set(QT_VERSION_MAJOR 5)
   else()
     find_package(QT NAMES Qt6 Qt5 COMPONENTS Core QUIET)
-  endif()
-  if(NOT QT_FOUND)
-    message(FATAL_ERROR "This project requires Qt for building PlusApp but Qt was not found. Please specify Qt6_DIR or Qt5_DIR, or turn off the PLUSBUILD_BUILD_PLUSAPP and PLUSBUILD_BUILD_PLUSLIB_WIDGETS options.")
+    if(NOT QT_FOUND)
+      message(FATAL_ERROR "This project requires Qt for building PlusApp but Qt was not found. Please specify Qt6_DIR or Qt5_DIR, or turn off the PLUSBUILD_BUILD_PLUSAPP and PLUSBUILD_BUILD_PLUSLIB_WIDGETS options.")
+    endif()
   endif()
   if(QT_VERSION_MAJOR EQUAL 6)
     # QOpenGLWidget, the base of VTK's Qt widget, has a module of its own in Qt 6.
@@ -460,8 +463,12 @@ if(PLUSBUILD_BUILD_PLUSAPP OR PLUSBUILD_BUILD_PLUSLIB_WIDGETS)
 
   find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${PLUSBUILD_QT_COMPONENTS} QUIET)
   if(NOT Qt${QT_VERSION_MAJOR}_FOUND)
-    message(FATAL_ERROR "Qt ${QT_VERSION_MAJOR} was found at ${Qt${QT_VERSION_MAJOR}_DIR}, but not all of the modules PlusApp needs: ${PLUSBUILD_QT_COMPONENTS}.")
+    message(FATAL_ERROR "Qt ${QT_VERSION_MAJOR} was not found at Qt${QT_VERSION_MAJOR}_DIR=${Qt${QT_VERSION_MAJOR}_DIR} with all of the modules PlusApp needs: ${PLUSBUILD_QT_COMPONENTS}.")
   endif()
+  # What the external project files test and pass on, whichever way the Qt
+  # was chosen above.
+  set(QT_FOUND TRUE)
+  set(QT_VERSION ${Qt${QT_VERSION_MAJOR}_VERSION})
 
   # WebKitWidgets was deprecated in Qt 5.3 and removed in 5.6.
   if(QT_VERSION_MAJOR EQUAL 5)
