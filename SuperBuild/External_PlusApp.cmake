@@ -41,8 +41,8 @@ set(PLUSAPP_DIR "${PLUS_PlusApp_BIN_DIR}" CACHE PATH "The directory containing P
 # --------------------------------------------------------------------------
 # Put the Qt runtime beside the executables so that the build tree is usable
 # without Qt on PATH. Only shared Qt builds need this.
-if(TARGET Qt5::Core)
-  get_target_property(_qt_lib_type Qt5::Core TYPE)
+if(TARGET Qt${QT_VERSION_MAJOR}::Core)
+  get_target_property(_qt_lib_type Qt${QT_VERSION_MAJOR}::Core TYPE)
   if(_qt_lib_type STREQUAL "SHARED_LIBRARY")
     # Close over the module dependencies of the requested components, so that
     # (for example) asking for Widgets also brings Gui and Core.
@@ -52,7 +52,7 @@ if(TARGET Qt5::Core)
     while(NOT _count EQUAL _previous_count)
       set(_previous_count ${_count})
       foreach(_component IN LISTS _components)
-        list(APPEND _components ${_Qt5${_component}_MODULE_DEPENDENCIES})
+        list(APPEND _components ${_Qt${QT_VERSION_MAJOR}${_component}_MODULE_DEPENDENCIES})
       endforeach()
       list(REMOVE_DUPLICATES _components)
       list(LENGTH _components _count)
@@ -60,9 +60,9 @@ if(TARGET Qt5::Core)
 
     set(_qt_targets)
     foreach(_component IN LISTS _components)
-      find_package(Qt5 QUIET COMPONENTS ${_component})
-      if(TARGET Qt5::${_component})
-        list(APPEND _qt_targets Qt5::${_component})
+      find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS ${_component})
+      if(TARGET Qt${QT_VERSION_MAJOR}::${_component})
+        list(APPEND _qt_targets Qt${QT_VERSION_MAJOR}::${_component})
       endif()
     endforeach()
 

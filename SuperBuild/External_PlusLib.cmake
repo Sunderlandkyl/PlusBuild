@@ -139,7 +139,7 @@ endif()
 
 if(PLUS_USE_CLARIUS_OEM)
   plus_add_pluslib_args(
-    -DQt5_DIR:PATH=${Qt5_DIR}
+    ${PLUSBUILD_QT_DIR_ARG}
     -DClariusOEM_DIR:PATH=${Plus_ClariusOEM_DIR}
     )
 endif()
@@ -401,7 +401,7 @@ if(PLUSBUILD_DOWNLOAD_PLUSLIBDATA AND NOT PLUSBUILD_OFFLINE_BUILD)
 endif()
 
 if(PLUSBUILD_BUILD_PLUSLIB_WIDGETS)
-  plus_add_pluslib_args(-DQt5_DIR:PATH=${Qt5_DIR})
+  plus_add_pluslib_args(${PLUSBUILD_QT_DIR_ARG})
 endif()
 
 # --------------------------------------------------------------------------

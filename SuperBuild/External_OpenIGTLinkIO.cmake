@@ -9,8 +9,8 @@ if(OpenIGTLinkIO_DIR)
 else()
   set(_igtlio_options)
   if(PLUSBUILD_BUILD_PLUSLIB_WIDGETS AND PLUSBUILD_VTK_VERSION VERSION_GREATER_EQUAL 9.0.0)
-    # A Qt-enabled VTK 9 needs Qt5_DIR passed on.
-    list(APPEND _igtlio_options -DQt5_DIR:PATH=${Qt5_DIR})
+    # A Qt-enabled VTK 9 needs to be told where Qt is.
+    list(APPEND _igtlio_options ${PLUSBUILD_QT_DIR_ARG})
   endif()
 
   plus_add_external_project(OpenIGTLinkIO

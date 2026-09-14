@@ -442,21 +442,42 @@ if(PLUS_USE_OPTITRACK)
 endif()
 
 if(PLUSBUILD_BUILD_PLUSAPP OR PLUSBUILD_BUILD_PLUSLIB_WIDGETS)
-  find_package(Qt5 COMPONENTS ${PLUSBUILD_QT_COMPONENTS} QUIET)
-  if(NOT Qt5_FOUND)
-    message(FATAL_ERROR "This project requires Qt5 for building PlusApp but Qt was not found. Please specify Qt5_DIR or turn off PLUSBUILD_BUILD_PLUSAPP/PLUSBUILD_BUILD_PLUSLIB_WIDGETS options.")
+  # Qt 6 where it is available, Qt 5 otherwise. A Qt5_DIR given without a
+  # Qt6_DIR is taken as the choice of Qt 5, so that pointing at a Qt 5 is not
+  # overridden by a Qt 6 that happens to be installed in a system location.
+  if(Qt5_DIR AND NOT Qt6_DIR)
+    find_package(QT NAMES Qt5 COMPONENTS Core QUIET)
+  else()
+    find_package(QT NAMES Qt6 Qt5 COMPONENTS Core QUIET)
+  endif()
+  if(NOT QT_FOUND)
+    message(FATAL_ERROR "This project requires Qt for building PlusApp but Qt was not found. Please specify Qt6_DIR or Qt5_DIR, or turn off the PLUSBUILD_BUILD_PLUSAPP and PLUSBUILD_BUILD_PLUSLIB_WIDGETS options.")
+  endif()
+  if(QT_VERSION_MAJOR EQUAL 6)
+    # QOpenGLWidget, the base of VTK's Qt widget, has a module of its own in Qt 6.
+    list(APPEND PLUSBUILD_QT_COMPONENTS OpenGLWidgets)
+  endif()
+
+  find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${PLUSBUILD_QT_COMPONENTS} QUIET)
+  if(NOT Qt${QT_VERSION_MAJOR}_FOUND)
+    message(FATAL_ERROR "Qt ${QT_VERSION_MAJOR} was found at ${Qt${QT_VERSION_MAJOR}_DIR}, but not all of the modules PlusApp needs: ${PLUSBUILD_QT_COMPONENTS}.")
   endif()
 
   # WebKitWidgets was deprecated in Qt 5.3 and removed in 5.6.
-  find_package(Qt5 OPTIONAL_COMPONENTS WebKitWidgets QUIET)
-  if(Qt5WebKitWidgets_FOUND)
-    list(APPEND PLUSBUILD_QT_COMPONENTS WebKitWidgets)
+  if(QT_VERSION_MAJOR EQUAL 5)
+    find_package(Qt5 OPTIONAL_COMPONENTS WebKitWidgets QUIET)
+    if(Qt5WebKitWidgets_FOUND)
+      list(APPEND PLUSBUILD_QT_COMPONENTS WebKitWidgets)
+    endif()
   endif()
 
-  set(ep_qt_args -DQt5_DIR:PATH=${Qt5_DIR})
+  # Spelled Qt6_DIR or Qt5_DIR after the version that was found. The external
+  # projects that only need to know where Qt is pass PLUSBUILD_QT_DIR_ARG on.
+  set(PLUSBUILD_QT_DIR_ARG -DQt${QT_VERSION_MAJOR}_DIR:PATH=${Qt${QT_VERSION_MAJOR}_DIR})
+  set(ep_qt_args ${PLUSBUILD_QT_DIR_ARG})
   foreach(_component IN LISTS PLUSBUILD_QT_COMPONENTS)
-    if(Qt5${_component}_DIR)
-      list(APPEND ep_qt_args -DQt5${_component}_DIR:PATH=${Qt5${_component}_DIR})
+    if(Qt${QT_VERSION_MAJOR}${_component}_DIR)
+      list(APPEND ep_qt_args -DQt${QT_VERSION_MAJOR}${_component}_DIR:PATH=${Qt${QT_VERSION_MAJOR}${_component}_DIR})
     endif()
   endforeach()
 endif()

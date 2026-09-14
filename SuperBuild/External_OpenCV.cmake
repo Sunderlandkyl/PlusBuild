@@ -47,8 +47,8 @@ else()
     list(APPEND _opencv_options -DWITH_CUDA:BOOL=OFF)
   endif()
 
-  if(Qt5_FOUND)
-    list(APPEND _opencv_options -DWITH_QT:BOOL=ON -DQt5_DIR:PATH=${Qt5_DIR})
+  if(QT_FOUND)
+    list(APPEND _opencv_options -DWITH_QT:BOOL=ON ${PLUSBUILD_QT_DIR_ARG})
   endif()
 
   if(MSVC)
