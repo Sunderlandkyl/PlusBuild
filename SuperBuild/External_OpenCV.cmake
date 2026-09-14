@@ -47,8 +47,14 @@ else()
     list(APPEND _opencv_options -DWITH_CUDA:BOOL=OFF)
   endif()
 
-  if(QT_FOUND)
+  # OpenCV's Qt window backend, which nothing in Plus uses. The version built
+  # here (4.5.5) predates Qt 6: its highgui module copies the Qt Test compile
+  # definitions in a way that leaks a generator expression onto the compiler
+  # command line, so under Qt 6 the backend stays off.
+  if(QT_FOUND AND QT_VERSION_MAJOR EQUAL 5)
     list(APPEND _opencv_options -DWITH_QT:BOOL=ON ${PLUSBUILD_QT_DIR_ARG})
+  else()
+    list(APPEND _opencv_options -DWITH_QT:BOOL=OFF)
   endif()
 
   if(MSVC)
